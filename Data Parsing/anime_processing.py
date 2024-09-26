@@ -5,6 +5,7 @@ data = pandas.read_csv('anime.csv', sep='\t')
 
 data = data.drop('synopsis', axis=1)
 data = data.drop('main_pic', axis=1)
+data = data.drop(data[data.type != "TV"].index)
 data = data.drop('type', axis=1)
 data = data.drop('num_episodes', axis=1)
 data = data.drop('status', axis=1)
@@ -30,13 +31,22 @@ data = data.drop('pics', axis=1)
 
 data = data.dropna()
 
-data['season'] = data['season'].apply(lambda season: season.split(" ")[1])
-data = data.rename(columns={"season": "year"})
+data['year'] = data['season'].apply(lambda season: season.split(" ")[1])
+data['season'] = data['season'].apply(lambda season: season.split(" ")[0])
 data = data[data.year != 'None']
 data['year'] = data['year'].apply(lambda year: int(year))
 data = data[(data.year >= 2000) & (data.year < 2010)]
 
 data['genres'] = data['genres'].apply(lambda genres: genres.split("|"))
+selected_genres = ["Action", "Adventure", "Avant Garde", "Award Winning",
+				   "Comedy", "Drama","Fantasy", "Girls Love", "Horror",
+				   "Mystery", "Romance", "Sci-Fi", "Sports", "Supernatural",
+				   "Suspense"
+					]
+data['genres'] = data['genres'].apply(lambda genres: [g for g in genres if g in selected_genres])
+data = data[data['genres'].map(len) > 0]
+
+print(data['genres'].explode().unique())
 
 data = data.sort_values('year')
 

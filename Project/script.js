@@ -13,7 +13,7 @@ function init() {
 
 function createScatterPlot(data) {
   const svgWidth = window.innerWidth / 2;
-  const svgHeight = 400;
+  const svgHeight = window.innerHeight;
   const margin = 60;
   const xScale = d3
     .scaleLinear()
