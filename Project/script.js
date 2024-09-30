@@ -12,8 +12,8 @@ function init() {
 // Create visual idioms
 
 function createScatterPlot(data) {
-  const svgWidth = window.innerWidth / 2;
-  const svgHeight = window.innerHeight;
+  const svgWidth = d3.select("#ScatterPlot").node().clientWidth;
+  const svgHeight = d3.select("#ScatterPlot").node().clientHeight;
   const margin = 60;
   const xScale = d3
     .scaleLinear()
@@ -23,12 +23,12 @@ function createScatterPlot(data) {
     .scaleLinear()
     .domain([10, 3])
     .range([margin, svgHeight - margin - 50]);
-  d3.select(".ScatterPlot")
+  d3.select("#ScatterPlot")
     .append("h3")
     .style("margin-left", `${margin}px`)
     .text("Correlation between popularity and rating");
   const svg = d3
-    .select(".ScatterPlot")
+    .select("#ScatterPlot")
     .append("svg")
     .attr("width", svgWidth)
     .attr("height", svgHeight);

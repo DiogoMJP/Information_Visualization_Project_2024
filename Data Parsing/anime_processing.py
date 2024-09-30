@@ -45,9 +45,6 @@ selected_genres = ["Action", "Adventure", "Avant Garde", "Award Winning",
 					]
 data['genres'] = data['genres'].apply(lambda genres: [g for g in genres if g in selected_genres])
 data = data[data['genres'].map(len) > 0]
-
-print(data['genres'].explode().unique())
-
 data = data.sort_values('year')
 
 data = data.drop('score_count', axis=1)
