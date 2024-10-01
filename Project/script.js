@@ -15,7 +15,7 @@ function init() {
 function createScatterPlot(data) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
-  const margin = 100;
+  const margin = 50;
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
@@ -23,7 +23,7 @@ function createScatterPlot(data) {
   const yScale = d3
     .scaleLinear()
     .domain([10, 3])
-    .range([margin, svgHeight - margin - 50]);
+    .range([margin, svgHeight - margin]);
   const svg = d3
     .select("#ScatterPlot")
     .append("svg")
@@ -58,35 +58,30 @@ function createScatterPlot(data) {
   svg
     .append("text")
     .attr("x", svgWidth - margin)
-    .attr("y", svgHeight - 2 * margin / 3)
+    .attr("y", svgHeight - 25)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("log-Popularity");
   svg
     .append("text")
-    .attr("x", margin / 2)
-    .attr("y", margin)
+    .attr("x", margin)
+    .attr("y", margin - 10)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Rating");
 }
 
 function createHistogram(data) {
-  // Data pre-processing
-
   data = data.map((obj) => obj["score"]);
-
-  // Core Histogram
 
   const svgWidth = d3.select("#Histogram").node().clientWidth;
   const svgHeight = d3.select("#Histogram").node().clientHeight;
-  const margin = 60;
-  const textMargin = 50;
+  const margin = 50;
 
   const xScale = d3
     .scaleLinear()
     .domain([0, 10])
-    .range([margin + textMargin, svgWidth - margin]);
+    .range([margin, svgWidth - margin]);
   
   const histogram = d3.histogram().domain(xScale.domain());
 
@@ -95,11 +90,7 @@ function createHistogram(data) {
   const yScale = d3
     .scaleLinear()
     .domain([0, d3.max(bins, function (d) {return d.length;})])
-    .range([svgHeight - margin - textMargin, 0]);
-  d3.select("#Histogram")
-    .append("h3")
-    .style("margin-left", `${0}px`)
-    .text("Average Score Count");
+    .range([svgHeight - margin, margin]);
 
   const svg = d3
     .select("#Histogram")
@@ -122,7 +113,7 @@ function createHistogram(data) {
       return xScale(d.x1) - xScale(d.x0);
     })
     .attr("height", function (d) {
-      return svgHeight - yScale(d.length) - margin - textMargin;
+      return svgHeight - yScale(d.length) - margin;
     })
     .style("fill", "steelblue")
     .style("stroke", "black")
@@ -145,27 +136,28 @@ function createHistogram(data) {
   svg
     .append("g")
     .attr("class", "xAxis")
-    .attr("transform", `translate(0,${svgHeight - margin - textMargin})`)
+    .attr("transform", `translate(0,${svgHeight - margin})`)
     .call(d3.axisBottom(xScale));
 
   svg
     .append("g")
     .attr("class", "yAxis")
-    .attr("transform", `translate(${margin + textMargin},0)`)
+    .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
 
   svg
     .append("text")
-    .attr("x", (svgWidth + textMargin) / 2)
-    .attr("y", svgHeight - margin)
+    .attr("x", svgWidth - margin)
+    .attr("y", svgHeight - 25)
+    .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Score");
   svg
     .append("text")
-    .attr("x", (-svgHeight + margin + textMargin) / 2)
-    .attr("y", margin)
+    .attr("x", margin)
+    .attr("y", margin - 10)
+    .attr("font-size", 10)
     .attr("text-anchor", "middle")
-    .attr("transform", "rotate(-90)")
     .text("Count");
 }
 
