@@ -13,9 +13,9 @@ function init() {
 // Create visual idioms
 
 function createScatterPlot(data) {
-  const svgWidth = d3.select("#ScatterPlot").node().clientWidth;
-  const svgHeight = d3.select("#ScatterPlot").node().clientHeight;
-  const margin = 60;
+  const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
+  const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
+  const margin = 100;
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
@@ -24,10 +24,6 @@ function createScatterPlot(data) {
     .scaleLinear()
     .domain([10, 3])
     .range([margin, svgHeight - margin - 50]);
-  d3.select("#ScatterPlot")
-    .append("h3")
-    .style("margin-left", `${margin}px`)
-    .text("Correlation between popularity and rating");
   const svg = d3
     .select("#ScatterPlot")
     .append("svg")
@@ -61,16 +57,17 @@ function createScatterPlot(data) {
     .call(d3.axisLeft(yScale));
   svg
     .append("text")
-    .attr("x", svgWidth / 2)
-    .attr("y", svgHeight - margin / 3)
+    .attr("x", svgWidth - margin)
+    .attr("y", svgHeight - 2 * margin / 3)
+    .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("log-Popularity");
   svg
     .append("text")
-    .attr("x", -svgHeight / 2 + margin / 2)
-    .attr("y", margin / 2)
+    .attr("x", margin / 2)
+    .attr("y", margin)
+    .attr("font-size", 10)
     .attr("text-anchor", "middle")
-    .attr("transform", "rotate(-90)")
     .text("Rating");
 }
 
