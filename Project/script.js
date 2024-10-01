@@ -6,6 +6,7 @@ function init() {
   d3.json("data.json").then(function (data) {
     globalData = data;
     createScatterPlot(globalData);
+    createHistogram(globalData);
   });
 }
 
@@ -71,6 +72,104 @@ function createScatterPlot(data) {
     .attr("text-anchor", "middle")
     .attr("transform", "rotate(-90)")
     .text("Rating");
+}
+
+function createHistogram(data) {
+  // Data pre-processing
+
+  data = data.map((obj) => obj["score"]);
+
+  // Core Histogram
+
+  const svgWidth = d3.select("#Histogram").node().clientWidth;
+  const svgHeight = d3.select("#Histogram").node().clientHeight;
+  const margin = 60;
+  const textMargin = 50;
+
+  const xScale = d3
+    .scaleLinear()
+    .domain([0, 10])
+    .range([margin + textMargin, svgWidth - margin]);
+  
+  const histogram = d3.histogram().domain(xScale.domain());
+
+  const bins = histogram(data);
+
+  const yScale = d3
+    .scaleLinear()
+    .domain([0, d3.max(bins, function (d) {return d.length;})])
+    .range([svgHeight - margin - textMargin, 0]);
+  d3.select("#Histogram")
+    .append("h3")
+    .style("margin-left", `${0}px`)
+    .text("Average Score Count");
+
+  const svg = d3
+    .select("#Histogram")
+    .append("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
+
+  svg
+    .selectAll("rect")
+    .data(bins)
+    .enter()
+    .append("rect")
+    .attr("x", function (d) {
+      return xScale(d.x0);
+    })
+    .attr("y", function (d) {
+      return yScale(d.length);
+    })
+    .attr("width", function (d) {
+      return xScale(d.x1) - xScale(d.x0);
+    })
+    .attr("height", function (d) {
+      return svgHeight - yScale(d.length) - margin - textMargin;
+    })
+    .style("fill", "steelblue")
+    .style("stroke", "black")
+    .on("mouseover", function (event, d) {
+      d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
+    })
+    .on("mouseleave", function (event, d) {
+      d3.select(this).style("stroke-width", "1px");
+    })
+    //.on("click", function (event, d) {
+    //  swal.fire("Número de vinhos: " + d.length);
+    //})
+    .append("title")
+    .text(function (d) {
+      return d.length;
+    });
+
+  // Axis
+
+  svg
+    .append("g")
+    .attr("class", "xAxis")
+    .attr("transform", `translate(0,${svgHeight - margin - textMargin})`)
+    .call(d3.axisBottom(xScale));
+
+  svg
+    .append("g")
+    .attr("class", "yAxis")
+    .attr("transform", `translate(${margin + textMargin},0)`)
+    .call(d3.axisLeft(yScale));
+
+  svg
+    .append("text")
+    .attr("x", (svgWidth + textMargin) / 2)
+    .attr("y", svgHeight - margin)
+    .attr("text-anchor", "middle")
+    .text("Score");
+  svg
+    .append("text")
+    .attr("x", (-svgHeight + margin + textMargin) / 2)
+    .attr("y", margin)
+    .attr("text-anchor", "middle")
+    .attr("transform", "rotate(-90)")
+    .text("Count");
 }
 
 // Triggered events
