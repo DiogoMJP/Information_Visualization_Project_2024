@@ -1,4 +1,5 @@
 var globalData;
+var selectedData = [];
 
 // Initialization of the dashboard
 
@@ -76,7 +77,7 @@ function createScatterPlot(data) {
 }
 
 function createHistogram(data) {
-  data = data.map((obj) => obj["score"]);
+  scoreData = data.map((obj) => obj["score"]);
 
   const svgWidth = d3.select("#Histogram").node().clientWidth;
   const svgHeight = d3.select("#Histogram").node().clientHeight;
@@ -89,7 +90,7 @@ function createHistogram(data) {
   
   const histogram = d3.histogram().domain(xScale.domain());
 
-  const bins = histogram(data);
+  const bins = histogram(scoreData);
 
   const yScale = d3
     .scaleLinear()
@@ -127,9 +128,12 @@ function createHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    //.on("click", function (event, d) {
-    //  swal.fire("Número de vinhos: " + d.length);
-    //})
+    .on("click", function (event, d) {
+      selectedData = data.filter(function (elem) { //TODO: make this append new selections
+        return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
+      });
+      updateHistogram(globalData);
+    })
     .append("title")
     .text(function (d) {
       return d.length;
@@ -169,6 +173,115 @@ function createHistogram(data) {
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Count");
+}
+
+function updateHistogram(data) {
+  scoreData = data.map((obj) => obj["score"]);
+  selectedScoreData = selectedData.map((obj) => obj["score"]);
+
+  const svgWidth = d3.select("#Histogram").node().clientWidth;
+  const svgHeight = d3.select("#Histogram").node().clientHeight;
+  const margin = 50;
+
+  const xScale = d3
+    .scaleLinear()
+    .domain([3, 9.5])
+    .range([margin, svgWidth - margin]);
+  
+  const histogram = d3.histogram().domain(xScale.domain()).thresholds(xScale.ticks(14));
+  const bins = histogram(scoreData);
+  const selectedBins = histogram(selectedScoreData);
+
+  const yScale = d3
+    .scaleLinear()
+    .domain([0, d3.max(bins, function (d) {return d.length;})])
+    .range([svgHeight - margin, margin]);
+
+  const svg = d3
+    .select("#Histogram")
+    .select("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
+
+  svg
+    .selectAll("rect")
+    .data(data, (d) => d.title)
+    .exit()
+    .remove();
+  svg
+    .selectAll("rect.gray")
+    .attr("class", "gray")
+    .data(bins)
+    .enter()
+    .append("rect")
+    .attr("class", "gray")
+    .attr("x", function (d) {
+      return xScale(d.x0);
+    })
+    .attr("y", function (d) {
+      return yScale(d.length);
+    })
+    .attr("width", function (d) {
+      return xScale(d.x1) - xScale(d.x0);
+    })
+    .attr("height", function (d) {
+      return svgHeight - yScale(d.length) - margin;
+    })
+    .style("fill", "gray")
+    .style("stroke", "black")
+    .on("mouseover", function (event, d) {
+      d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
+    })
+    .on("mouseleave", function (event, d) {
+      d3.select(this).style("stroke-width", "1px");
+    })
+    .on("click", function (event, d) {
+      selectedData = data.filter(function (elem) {
+        return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
+      });
+      updateHistogram(globalData);
+    })
+    .append("title")
+    .text(function (d) {
+      return d.length;
+    });
+  svg
+    .selectAll("rect.selected")
+    .data(selectedBins)
+    .enter()
+    .append("rect")
+    .attr("class", "selected")
+    .attr("x", function (d) {
+      return xScale(d.x0);
+    })
+    .attr("y", function (d) {
+      return yScale(d.length);
+    })
+    .attr("width", function (d) {
+      return xScale(d.x1) - xScale(d.x0);
+    })
+    .attr("height", function (d) {
+      return svgHeight - yScale(d.length) - margin;
+    })
+    .style("fill", "steelblue")
+    .style("stroke", "black")
+    .on("mouseover", function (event, d) {
+      d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
+    })
+    .on("mouseleave", function (event, d) {
+      d3.select(this).style("stroke-width", "1px");
+    })
+    .on("click", function (event, d) {
+      selectedData = data.filter(function (elem) {
+        return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
+      });
+
+      updateHistogram(globalData);
+    })
+    .append("title")
+    .text(function (d) {
+      return d.length;
+    });
 }
 
 // Triggered events
