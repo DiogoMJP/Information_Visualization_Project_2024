@@ -16,6 +16,10 @@ function createScatterPlot(data) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
   const margin = 50;
+
+  const colorScale = d3.scaleOrdinal()
+    .domain(["Spring", "Summer", "Fall", "Winter"])
+    .range(["#6AB04C", "#F9CA24", "#E74C3C", "#3498DB"]);
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
@@ -38,7 +42,7 @@ function createScatterPlot(data) {
     .attr("r", 3)
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
-    .style("fill", "steelblue")
+    .attr("fill", function(d) { return colorScale(d.season); })
     .style("stroke", "black")
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
