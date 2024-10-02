@@ -133,6 +133,7 @@ function createHistogram(data) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
       updateHistogram(globalData);
+      updateScatterPlot(globalData);
     })
     .append("title")
     .text(function (d) {
@@ -173,6 +174,66 @@ function createHistogram(data) {
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Count");
+}
+
+function updateScatterPlot(data) {
+  const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
+  const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
+  const margin = 50;
+
+  const colorScale = d3.scaleOrdinal()
+    .domain(["Spring", "Summer", "Fall", "Winter"])
+    .range(["#6AB04C", "#F9CA24", "#E74C3C", "#3498DB"]);
+  const xScale = d3
+    .scaleLinear()
+    .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+    .range([margin + 50, svgWidth - margin]);
+  const yScale = d3
+    .scaleLinear()
+    .domain([10, 3])
+    .range([margin, svgHeight - margin - 50]);
+  const svg = d3
+    .select("#ScatterPlot")
+    .select("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
+  svg
+    .selectAll("circle")
+    .data(data, (d) => d.title)
+    .exit()
+    .remove();
+  svg
+    .selectAll("circle.gray")
+    .data(data, (d) => d.title)
+    .enter()
+    .append("circle")
+    .attr("class", "gray")
+    .attr("r", 3)
+    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", (d) => yScale(d.score))
+    .attr("fill", "gray")
+    .style("stroke", "black")
+    .style("stroke-width", 1)
+    .on("mouseover", mouseOverFunction)
+    .on("mouseleave", mouseLeaveFunction)
+    .append("title")
+    .text((d) => d.title);
+  svg
+    .selectAll("circle.selected")
+    .data(selectedData, (d) => d.title)
+    .enter()
+    .append("circle")
+    .attr("class", "selected")
+    .attr("r", 3)
+    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", (d) => yScale(d.score))
+    .attr("fill", function(d) { return colorScale(d.season); })
+    .style("stroke", "black")
+    .style("stroke-width", 1)
+    .on("mouseover", mouseOverFunction)
+    .on("mouseleave", mouseLeaveFunction)
+    .append("title")
+    .text((d) => d.title);
 }
 
 function updateHistogram(data) {
@@ -240,6 +301,7 @@ function updateHistogram(data) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
       updateHistogram(globalData);
+      updateScatterPlot(globalData);
     })
     .append("title")
     .text(function (d) {
@@ -275,8 +337,8 @@ function updateHistogram(data) {
       selectedData = data.filter(function (elem) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
-
       updateHistogram(globalData);
+      updateScatterPlot(globalData);
     })
     .append("title")
     .text(function (d) {
