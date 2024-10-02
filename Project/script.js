@@ -183,7 +183,7 @@ function updateScatterPlot(data) {
 
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
-    .range(["#6AB04C", "#F9CA24", "#E74C3C", "#3498DB"]);
+    .range(["LimeGreen", "Gold", "DarkOrange", "DeepSkyBlue"]);
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
