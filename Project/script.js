@@ -28,7 +28,7 @@ function createScatterPlot(data) {
   const yScale = d3
     .scaleLinear()
     .domain([10, 3])
-    .range([margin, svgHeight - margin]);
+    .range([margin, svgHeight - margin - 50]);
   const svg = d3
     .select("#ScatterPlot")
     .append("svg")

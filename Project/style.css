@@ -8,15 +8,6 @@
   gap: 10px;
   background-color: white;
 }
-.logo_container {
-  width: 100%;
-  height: 10%;
-  overflow: hidden;
-}
-.logo_container img {
-  width: 100%;
-  margin: -10% 0 0 0;
-}
 .graph_container {
   width: flex;
   height: flex;
@@ -25,12 +16,42 @@
   border-width: 2px;
   border-color: lightgrey;
 }
-#FilterBox {
+#FilterContainer {
   background-color: rgba(255, 255, 255, 0.8);
   grid-row: 1 / span 3;
   border-style: none solid none none;
   border-width: 3px;
   border-color: black;
+}
+#logo_container {
+  width: 100%;
+  height: 7%;
+  overflow: hidden;
+  background-color: #2e51a2;
+}
+#logo_container img {
+  width: 100%;
+  position: relative;
+  top: 50%;
+  transform: translateY(-50%);
+}
+#search_box_container {
+  display: grid;
+  grid-template-columns: auto auto;
+  height: 7%;
+  background-color: cornflowerblue;
+}
+#search_box {
+  width: 88%;
+  background-color: cornflowerblue;
+  color: white;
+  font-size: 16px;
+  margin: 14px;
+  border-style: hidden;
+}
+#search_box::placeholder {
+  color: white;
+  opacity: 0.7;
 }
 #ScentedPlot {
   background-color: rgba(255, 255, 255, 0.8);
