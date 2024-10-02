@@ -84,7 +84,7 @@ function createHistogram(data) {
 
   const xScale = d3
     .scaleLinear()
-    .domain([0, 10])
+    .domain([3, 9.5])
     .range([margin, svgWidth - margin]);
   
   const histogram = d3.histogram().domain(xScale.domain());
@@ -141,13 +141,19 @@ function createHistogram(data) {
     .append("g")
     .attr("class", "xAxis")
     .attr("transform", `translate(0,${svgHeight - margin})`)
-    .call(d3.axisBottom(xScale));
+    .call(d3.axisBottom(xScale)
+            .ticks(14)
+            .tickValues(d3.range(3, 9.5, 0.5))
+    );
 
   svg
     .append("g")
     .attr("class", "yAxis")
     .attr("transform", `translate(${margin},0)`)
-    .call(d3.axisLeft(yScale));
+    .call(d3.axisLeft(yScale)
+            .ticks(14)
+            .tickValues(d3.range(0, d3.max(bins, function (d) {return d.length;}), 50))
+  );
 
   svg
     .append("text")
