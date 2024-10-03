@@ -20,7 +20,7 @@ function createScatterPlot(data) {
 
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
-    .range(["LimeGreen", "Gold", "DarkOrange", "DeepSkyBlue"]);
+    .range(["LimeGreen", "Yellow", "DarkOrange", "DarkOrchid"]);
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
@@ -183,7 +183,7 @@ function updateScatterPlot(data, min, max) {
 
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
-    .range(["LimeGreen", "Gold", "DarkOrange", "DeepSkyBlue"]);
+    .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
@@ -198,11 +198,9 @@ function updateScatterPlot(data, min, max) {
     .attr("width", svgWidth)
     .attr("height", svgHeight);
   svg
-    .selectAll(".yAxis")
-    .remove();
-  svg
-    .append("g")
-    .attr("class", "yAxis")
+    .select("g.yAxis")
+    .transition()
+    .duration(1000)
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
   svg
