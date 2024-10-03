@@ -133,7 +133,7 @@ function createHistogram(data) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
       updateHistogram(globalData);
-      updateScatterPlot(globalData);
+      updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
     })
     .append("title")
     .text(function (d) {
@@ -156,8 +156,8 @@ function createHistogram(data) {
     .attr("class", "yAxis")
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale)
-            .ticks(14)
-            .tickValues(d3.range(0, d3.max(bins, function (d) {return d.length;}), 50))
+      .ticks(14)
+      .tickValues(d3.range(0, d3.max(bins, function (d) {return d.length;}), 50))
   );
 
   svg
@@ -176,7 +176,7 @@ function createHistogram(data) {
     .text("Count");
 }
 
-function updateScatterPlot(data) {
+function updateScatterPlot(data, min, max) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
   const margin = 50;
@@ -190,7 +190,7 @@ function updateScatterPlot(data) {
     .range([margin + 50, svgWidth - margin]);
   const yScale = d3
     .scaleLinear()
-    .domain([10, 3])
+    .domain([max, min])
     .range([margin, svgHeight - margin - 50]);
   const svg = d3
     .select("#ScatterPlot")
@@ -198,26 +198,17 @@ function updateScatterPlot(data) {
     .attr("width", svgWidth)
     .attr("height", svgHeight);
   svg
-    .selectAll("circle")
-    .data(data, (d) => d.title)
-    .exit()
+    .selectAll(".yAxis")
     .remove();
   svg
-    .selectAll("circle.gray")
+    .append("g")
+    .attr("class", "yAxis")
+    .attr("transform", `translate(${margin},0)`)
+    .call(d3.axisLeft(yScale));
+  svg
+    .selectAll("circle")
     .data(data, (d) => d.title)
-    .enter()
-    .append("circle")
-    .attr("class", "gray")
-    .attr("r", 3)
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score))
-    .attr("fill", "gray")
-    .style("stroke", "black")
-    .style("stroke-width", 1)
-    .on("mouseover", mouseOverFunction)
-    .on("mouseleave", mouseLeaveFunction)
-    .append("title")
-    .text((d) => d.title);
+    .remove();
   svg
     .selectAll("circle.selected")
     .data(selectedData, (d) => d.title)
@@ -228,7 +219,7 @@ function updateScatterPlot(data) {
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
     .attr("fill", function(d) { return colorScale(d.season); })
-    .style("stroke", "black")
+    .style("stroke", "gray")
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
@@ -301,7 +292,7 @@ function updateHistogram(data) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
       updateHistogram(globalData);
-      updateScatterPlot(globalData);
+      updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
     })
     .append("title")
     .text(function (d) {
@@ -338,7 +329,7 @@ function updateHistogram(data) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
       updateHistogram(globalData);
-      updateScatterPlot(globalData);
+      updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
     })
     .append("title")
     .text(function (d) {
