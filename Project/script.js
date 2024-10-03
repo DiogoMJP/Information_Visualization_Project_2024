@@ -27,7 +27,7 @@ function createScatterPlot(data) {
     .range([margin + 50, svgWidth - margin]);
   const yScale = d3
     .scaleLinear()
-    .domain([10, 3])
+    .domain([9.5, 3])
     .range([margin, svgHeight - margin - 50]);
   const svg = d3
     .select("#ScatterPlot")
@@ -325,11 +325,17 @@ function updateHistogram(data) {
       d3.select(this).style("stroke-width", "1px");
     })
     .on("click", function (event, d) {
-      selectedData = data.filter(function (elem) {
-        return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
-      });
+      if (selectedData.length != globalData.length) {
+        selectedData = globalData;
+        updateScatterPlot(globalData, 3, 9.5);
+      }
+      else {
+        selectedData = data.filter(function (elem) {
+          return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
+        });
+        updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
+      }
       updateHistogram(globalData);
-      updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
     })
     .append("title")
     .text(function (d) {
