@@ -206,23 +206,31 @@ function updateScatterPlot(data, min, max) {
   svg
     .selectAll("circle")
     .data(data, (d) => d.title)
-    .remove();
-  svg
-    .selectAll("circle.selected")
-    .data(selectedData, (d) => d.title)
-    .enter()
-    .append("circle")
-    .attr("class", "selected")
+    .transition()
     .attr("r", 3)
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
-    .attr("fill", function(d) { return colorScale(d.season); })
-    .style("stroke", "gray")
-    .style("stroke-width", 1)
-    .on("mouseover", mouseOverFunction)
-    .on("mouseleave", mouseLeaveFunction)
-    .append("title")
-    .text((d) => d.title);
+    .duration(1000)
+    .remove()
+    .end()
+    .then(() => {
+      svg
+        .selectAll("circle.selected")
+        .data(selectedData, (d) => d.title)
+        .enter()
+        .append("circle")
+        .attr("class", "selected")
+        .attr("r", 3)
+        .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+        .attr("cy", (d) => yScale(d.score))
+        .attr("fill", function(d) { return colorScale(d.season); })
+        .style("stroke", "gray")
+        .style("stroke-width", 1)
+        .on("mouseover", mouseOverFunction)
+        .on("mouseleave", mouseLeaveFunction)
+        .append("title")
+        .text((d) => d.title);
+    })
 }
 
 function updateHistogram(data) {
