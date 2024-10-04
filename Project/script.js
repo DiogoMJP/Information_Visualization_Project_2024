@@ -6,9 +6,20 @@ var selectedData = [];
 function init() {
   d3.json("data.json").then(function (data) {
     globalData = data;
+    createAnimeList(globalData);
     createScatterPlot(globalData);
     createHistogram(globalData);
   });
+}
+
+function createAnimeList(data) {
+  anime_list = document.getElementById("anime_list")
+  for (anime of data) {
+    let anime_list_element = document.createElement("div")
+    anime_list_element.setAttribute("class", "anime_list_element");
+    anime_list_element.innerText += anime.title;
+    anime_list.append(anime_list_element);
+  }
 }
 
 // Create visual idioms
@@ -20,7 +31,7 @@ function createScatterPlot(data) {
 
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
-    .range(["LimeGreen", "Yellow", "DarkOrange", "DarkOrchid"]);
+    .range(["LimeGreen", "Gold", "DarkOrange", "DarkOrchid"]);
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
