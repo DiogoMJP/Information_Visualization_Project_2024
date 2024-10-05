@@ -217,23 +217,25 @@ function createHistogram(data) {
 
 // Interaction managers
 function clickSelectedCircle(event, d) {
-  if (individualSelectedData.length != selectedData.length) { //deselect if not all points are selected
-    individualSelectedData = individualSelectedData.filter(function (elem) {
-      return d.members_count != elem.members_count || d.score != elem.score;
-    });
-    if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected
-      individualSelectedData = selectedData;
-  }
-  else { //if all points are selected, it means its the first selection so add that point
+  //if all points are selected, it means its the first selection so make that the only selected point
+  if (individualSelectedData.length == selectedData.length) {
     individualSelectedData = selectedData.filter(function (elem) {
       return d.members_count == elem.members_count && d.score == elem.score;
     });
+  }
+  else { //if they aren't all selected it deselects that point
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return d.members_count != elem.members_count || d.score != elem.score;
+    });
+    if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected again
+      individualSelectedData = selectedData;
   }
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
 
 function clickGrayCircle(event, d) {
+  //the point being gray means clicking it always results in adding it to the selection
   individualSelectedData.push(
     selectedData.filter(function (elem) {
       return d.members_count == elem.members_count && d.score == elem.score;
