@@ -424,7 +424,7 @@ function updateHistogram(data) {
   const xScale = d3
     .scaleLinear()
     .domain([3, 9.5])
-    .range([margin, svgWidth - margin]);
+    .range([margin + 50, svgWidth - margin]);
   
   const histogram = d3.histogram().domain(xScale.domain()).thresholds(xScale.ticks(14));
   const bins = histogram(scoreData);
