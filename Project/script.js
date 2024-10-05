@@ -1,6 +1,6 @@
 var globalData;
 var selectedData = [];
-var scatterplotSelectedData = [];
+var individualSelectedData = [];
 var max = 9.5;
 var min = 3;
 
@@ -82,7 +82,7 @@ function createScatterPlot(data) {
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
     .on("click", function (event, d) {
-      scatterplotSelectedData = data.filter(function (elem) {
+      individualSelectedData = data.filter(function (elem) {
         return d.members_count == elem.members_count && d.score == elem.score;
       });
       selectedData = globalData;
@@ -183,7 +183,7 @@ function createHistogram(data) {
       selectedData = data.filter(function (elem) { 
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
-      scatterplotSelectedData = selectedData;
+      individualSelectedData = selectedData;
       updateHistogram(globalData);
       max = d.x0 + 0.5;
       min = d.x0;
@@ -281,7 +281,7 @@ function updateScatterPlot(data) {
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
     .on("click", function (event, d) {
-      scatterplotSelectedData.push(
+      individualSelectedData.push(
         data.filter(function (elem) {
           return d.members_count == elem.members_count && d.score == elem.score;
         })[0]
@@ -294,7 +294,7 @@ function updateScatterPlot(data) {
   
   selectedGroup
     .selectAll("circle")
-    .data(scatterplotSelectedData, (d) => d.title)
+    .data(individualSelectedData, (d) => d.title)
     .enter()
     .append("circle")
     .attr("r", 3)
@@ -308,16 +308,16 @@ function updateScatterPlot(data) {
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
     .on("click", function (event, d) {
-      if (scatterplotSelectedData.length != selectedData.length) {
-        scatterplotSelectedData = scatterplotSelectedData.filter(function (elem) {
+      if (individualSelectedData.length != selectedData.length) {
+        individualSelectedData = individualSelectedData.filter(function (elem) {
           return d.members_count != elem.members_count || d.score != elem.score;
         });
-        if (scatterplotSelectedData.length == 0)
-          scatterplotSelectedData = selectedData;
+        if (individualSelectedData.length == 0)
+          individualSelectedData = selectedData;
       }
       else {
-        scatterplotSelectedData = [];
-        scatterplotSelectedData.push(
+        individualSelectedData = [];
+        individualSelectedData.push(
           data.filter(function (elem) {
             return d.members_count == elem.members_count && d.score == elem.score;
           })[0]
@@ -394,16 +394,16 @@ function updateScatterPlotScale(data) {
         .on("mouseover", mouseOverFunction)
         .on("mouseleave", mouseLeaveFunction)
         .on("click", function (event, d) {
-          if (scatterplotSelectedData.length != selectedData.length) {
-            scatterplotSelectedData = scatterplotSelectedData.filter(function (elem) {
+          if (individualSelectedData.length != selectedData.length) {
+            individualSelectedData = individualSelectedData.filter(function (elem) {
               return d.members_count != elem.members_count || d.score != elem.score;
             });
-            if (scatterplotSelectedData.length == 0)
-              scatterplotSelectedData = selectedData;
+            if (individualSelectedData.length == 0)
+              individualSelectedData = selectedData;
           }
           else {
-            scatterplotSelectedData = [];
-            scatterplotSelectedData.push(
+            individualSelectedData = [];
+            individualSelectedData.push(
               data.filter(function (elem) {
                 return d.members_count == elem.members_count && d.score == elem.score;
               })[0]
@@ -481,7 +481,7 @@ function updateHistogram(data) {
       selectedData = data.filter(function (elem) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
-      scatterplotSelectedData = selectedData;
+      individualSelectedData = selectedData;
       updateHistogram(globalData);
       max = d.x0 + 0.5;
       min = d.x0;
@@ -513,8 +513,8 @@ function updateHistogram(data) {
     .style("fill", "steelblue")
     .style("stroke", function (d) {
       res = "black";
-      if (scatterplotSelectedData.length != selectedData.length) {
-        scatterplotSelectedData.forEach((elem) => {
+      if (individualSelectedData.length != selectedData.length) {
+        individualSelectedData.forEach((elem) => {
           if (elem.score >= d.x0 && elem.score < d.x0 + 0.5) {
             d3.select(this).raise();
             res = "red";
@@ -532,7 +532,7 @@ function updateHistogram(data) {
     .on("click", function (event, d) {
       if (selectedData.length != globalData.length) {
         selectedData = globalData;
-        scatterplotSelectedData = selectedData;
+        individualSelectedData = selectedData;
         max = 9.5;
         min = 3;
       }
@@ -540,7 +540,7 @@ function updateHistogram(data) {
         selectedData = data.filter(function (elem) {
           return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
         });
-        scatterplotSelectedData = selectedData;
+        individualSelectedData = selectedData;
         max = d.x0 + 0.5;
         min = d.x0;
       }
