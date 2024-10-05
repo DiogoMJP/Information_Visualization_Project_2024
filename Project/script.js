@@ -28,6 +28,21 @@ function createAnimeList(data) {
 
 // Create visual idioms
 
+
+function drawSkip(is_horiz, start_x, start_y) {
+  const data = (sx, sy) => {return [{x: sx + 0, y: sy + 0}, {x: sx + 13, y: sy + 0}, {x: sx + 15, y: sy + 5}, {x: sx + 19, y: sy - 5}, {x: sx + 23, y: sy + 5},
+    {x: sx + 27, y: sy - 5}, {x: sx + 31, y: sy + 5}, {x: sx + 35, y: sy - 5}, {x: sx + 37, y: sy + 0}, {x: sx + 50, y: sy + 0}]};
+  var horizLineFunc = d3.line()
+    .x(function(d) { return d.x })
+    .y(function(d) { return d.y });
+  var vertLineFunc = d3.line()
+    .x(function(d) { return d.y })
+    .y(function(d) { return d.x });
+  console.log(is_horiz, data(start_x, start_y));
+  if (is_horiz) {return horizLineFunc(data(start_x, start_y));}
+  else {return vertLineFunc(data(start_y, start_x));}
+}
+
 function createScatterPlot(data) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
@@ -86,6 +101,16 @@ function createScatterPlot(data) {
     .attr("class", "yAxis")
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
+  svg.append('path')
+    .attr('d', drawSkip(true, margin, svgHeight - margin))
+    .attr('stroke', 'black')
+    .attr('width', 1)
+    .attr('fill', 'none');
+  svg.append('path')
+    .attr('d', drawSkip(false, margin, svgHeight - margin - 50))
+    .attr('stroke', 'black')
+    .attr('width', 1)
+    .attr('fill', 'none');
   svg
     .append("text")
     .attr("x", svgWidth - margin)
@@ -112,7 +137,7 @@ function createHistogram(data) {
   const xScale = d3
     .scaleLinear()
     .domain([3, 9.5])
-    .range([margin, svgWidth - margin]);
+    .range([margin + 50, svgWidth - margin]);
   
   const histogram = d3.histogram().domain(xScale.domain());
 
@@ -177,6 +202,11 @@ function createHistogram(data) {
             .ticks(14)
             .tickValues(d3.range(3, 9.5, 0.5))
     );
+    svg.append('path')
+    .attr('d', drawSkip(true, margin, svgHeight - margin))
+    .attr('stroke', 'black')
+    .attr('width', 1)
+    .attr('fill', 'none');
 
   svg
     .append("g")
