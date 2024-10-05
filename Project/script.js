@@ -1,11 +1,15 @@
 var globalData;
 var selectedData = [];
+var scatterplotSelectedData = [];
+var max = 9.5;
+var min = 3;
 
 // Initialization of the dashboard
 
 function init() {
   d3.json("data.json").then(function (data) {
     globalData = data;
+    selectedData = data;
     createScatterPlot(globalData);
     createHistogram(globalData);
   });
@@ -34,6 +38,7 @@ function createScatterPlot(data) {
     .append("svg")
     .attr("width", svgWidth)
     .attr("height", svgHeight);
+    
   svg
     .selectAll("circle")
     .data(data, (d) => d.title)
@@ -48,6 +53,14 @@ function createScatterPlot(data) {
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
+    .on("click", function (event, d) {
+      scatterplotSelectedData = data.filter(function (elem) {
+        return d.members_count == elem.members_count && d.score == elem.score;
+      });
+      selectedData = globalData;
+      updateHistogram(globalData);
+      updateScatterPlot(globalData, 3, 9.5);
+    })
     .append("title")
     .text((d) => d.title);
   svg
@@ -129,18 +142,19 @@ function createHistogram(data) {
       d3.select(this).style("stroke-width", "1px");
     })
     .on("click", function (event, d) {
-      selectedData = data.filter(function (elem) { //TODO: make this append new selections
+      selectedData = data.filter(function (elem) { 
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
+      scatterplotSelectedData = selectedData;
       updateHistogram(globalData);
-      updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
+      max = d.x0 + 0.5;
+      min = d.x0;
+      updateScatterPlot(globalData);
     })
     .append("title")
     .text(function (d) {
       return d.length;
     });
-
-  // Axis
 
   svg
     .append("g")
@@ -176,7 +190,8 @@ function createHistogram(data) {
     .text("Count");
 }
 
-function updateScatterPlot(data, min, max) {
+
+function updateScatterPlot(data) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
   const margin = 50;
@@ -203,24 +218,80 @@ function updateScatterPlot(data, min, max) {
     .duration(1000)
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
-  svg
-    .selectAll("circle")
-    .data(data, (d) => d.title)
-    .remove();
-  svg
-    .selectAll("circle.selected")
+
+  let grayGroup = svg.select("g.gray-group");
+  if (grayGroup.empty()) {
+    grayGroup = svg.append("g").attr("class", "gray-group");
+  }
+  
+  let selectedGroup = svg.select("g.selected-group");
+  if (selectedGroup.empty()) {
+    selectedGroup = svg.append("g").attr("class", "selected-group");
+  }
+  
+  svg.selectAll("circle").remove();
+  
+  grayGroup
+    .selectAll("circle.gray")
     .data(selectedData, (d) => d.title)
+    .enter()
+    .append("circle")
+    .attr("class", "gray")
+    .attr("r", 3)
+    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", (d) => yScale(d.score))
+    .attr("fill", "gray")
+    .style("stroke", "gray")
+    .style("stroke-width", 1)
+    .on("mouseover", mouseOverFunction)
+    .on("mouseleave", mouseLeaveFunction)
+    .on("click", function (event, d) {
+      scatterplotSelectedData.push(
+        data.filter(function (elem) {
+          return d.members_count == elem.members_count && d.score == elem.score;
+        })[0]
+      );
+      updateHistogram(globalData);
+      updateScatterPlot(globalData);
+    })
+    .append("title")
+    .text((d) => d.title);
+  
+  selectedGroup
+    .selectAll("circle.selected")
+    .data(scatterplotSelectedData, (d) => d.title)
     .enter()
     .append("circle")
     .attr("class", "selected")
     .attr("r", 3)
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
-    .attr("fill", function(d) { return colorScale(d.season); })
+    .attr("fill", function (d) {
+      return colorScale(d.season);
+    })
     .style("stroke", "gray")
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
+    .on("click", function (event, d) {
+      if (scatterplotSelectedData.length != selectedData.length) {
+        scatterplotSelectedData = scatterplotSelectedData.filter(function (elem) {
+          return d.members_count != elem.members_count || d.score != elem.score;
+        });
+        if (scatterplotSelectedData.length == 0)
+          scatterplotSelectedData = selectedData;
+      }
+      else {
+        scatterplotSelectedData = [];
+        scatterplotSelectedData.push(
+          data.filter(function (elem) {
+            return d.members_count == elem.members_count && d.score == elem.score;
+          })[0]
+        );
+      }
+      updateHistogram(globalData);
+      updateScatterPlot(globalData);
+    })
     .append("title")
     .text((d) => d.title);
 }
@@ -289,8 +360,11 @@ function updateHistogram(data) {
       selectedData = data.filter(function (elem) {
         return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
       });
+      scatterplotSelectedData = selectedData;
       updateHistogram(globalData);
-      updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
+      max = d.x0 + 0.5;
+      min = d.x0;
+      updateScatterPlot(globalData);
     })
     .append("title")
     .text(function (d) {
@@ -314,8 +388,20 @@ function updateHistogram(data) {
     .attr("height", function (d) {
       return svgHeight - yScale(d.length) - margin;
     })
+    .style("position", "relative")
     .style("fill", "steelblue")
-    .style("stroke", "black")
+    .style("stroke", function (d) {
+      res = "black";
+      if (scatterplotSelectedData.length != selectedData.length) {
+        scatterplotSelectedData.forEach((elem) => {
+          if (elem.score >= d.x0 && elem.score < d.x0 + 0.5) {
+            d3.select(this).raise();
+            res = "red";
+          }
+        });
+      }
+      return res;
+    })
     .on("mouseover", function (event, d) {
       d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
     })
@@ -325,14 +411,19 @@ function updateHistogram(data) {
     .on("click", function (event, d) {
       if (selectedData.length != globalData.length) {
         selectedData = globalData;
-        updateScatterPlot(globalData, 3, 9.5);
+        scatterplotSelectedData = selectedData;
+        max = 9.5;
+        min = 3;
       }
       else {
         selectedData = data.filter(function (elem) {
           return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
         });
-        updateScatterPlot(globalData, d.x0, d.x0 + 0.5);
+        scatterplotSelectedData = selectedData;
+        max = d.x0 + 0.5;
+        min = d.x0;
       }
+      updateScatterPlot(globalData);
       updateHistogram(globalData);
     })
     .append("title")
