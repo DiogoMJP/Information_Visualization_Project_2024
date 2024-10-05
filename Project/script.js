@@ -556,9 +556,11 @@ function updateHistogram(data) {
 // Triggered events
 
 function mouseOverFunction(event, d) {
-
+  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
+  d3.select(this).attr("r", 6);
 }
 
 function mouseLeaveFunction(event, d) {
-
+  d3.select(this).style("stroke-width", "1px");
+  d3.select(this).attr("r", 3);
 }
