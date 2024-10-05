@@ -5,11 +5,11 @@ var max = 9.5;
 var min = 3;
 
 // Initialization of the dashboard
-
 function init() {
   d3.json("data.json").then(function (data) {
     globalData = data;
     selectedData = data;
+    individualSelectedData = data;
     createAnimeList(globalData);
     createScatterPlot(globalData);
     createHistogram(globalData);
@@ -27,8 +27,6 @@ function createAnimeList(data) {
 }
 
 // Create visual idioms
-
-
 function drawSkip(is_horiz, start_x, start_y) {
   const data = (sx, sy) => {return [{x: sx + 0, y: sy + 0}, {x: sx + 13, y: sy + 0}, {x: sx + 15, y: sy + 5}, {x: sx + 19, y: sy - 5}, {x: sx + 23, y: sy + 5},
     {x: sx + 27, y: sy - 5}, {x: sx + 31, y: sy + 5}, {x: sx + 35, y: sy - 5}, {x: sx + 37, y: sy + 0}, {x: sx + 50, y: sy + 0}]};
@@ -38,7 +36,7 @@ function drawSkip(is_horiz, start_x, start_y) {
   var vertLineFunc = d3.line()
     .x(function(d) { return d.y })
     .y(function(d) { return d.x });
-  console.log(is_horiz, data(start_x, start_y));
+  
   if (is_horiz) {return horizLineFunc(data(start_x, start_y));}
   else {return vertLineFunc(data(start_y, start_x));}
 }
@@ -81,14 +79,7 @@ function createScatterPlot(data) {
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
-    .on("click", function (event, d) {
-      individualSelectedData = data.filter(function (elem) {
-        return d.members_count == elem.members_count && d.score == elem.score;
-      });
-      selectedData = globalData;
-      updateHistogram(globalData);
-      updateScatterPlot(globalData);
-    })
+    .on("click", clickSelectedCircle)
     .append("title")
     .text((d) => d.title);
   svg
@@ -179,16 +170,7 @@ function createHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    .on("click", function (event, d) {
-      selectedData = data.filter(function (elem) { 
-        return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
-      });
-      individualSelectedData = selectedData;
-      updateHistogram(globalData);
-      max = d.x0 + 0.5;
-      min = d.x0;
-      updateScatterPlotScale(globalData);
-    })
+    .on("click", clickBin)
     .append("title")
     .text(function (d) {
       return d.length;
@@ -233,7 +215,65 @@ function createHistogram(data) {
     .text("Count");
 }
 
+// Interaction managers
+function clickSelectedCircle(event, d) {
+  if (individualSelectedData.length != selectedData.length) { //deselect if not all points are selected
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return d.members_count != elem.members_count || d.score != elem.score;
+    });
+    if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected
+      individualSelectedData = selectedData;
+  }
+  else { //if all points are selected, it means its the first selection so add that point
+    individualSelectedData = selectedData.filter(function (elem) {
+      return d.members_count == elem.members_count && d.score == elem.score;
+    });
+  }
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
 
+function clickGrayCircle(event, d) {
+  individualSelectedData.push(
+    selectedData.filter(function (elem) {
+      return d.members_count == elem.members_count && d.score == elem.score;
+    })[0]
+  );
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
+function clickBin(event, d) {
+  //bin was selected so deselecting it makes everything selected again
+  if (selectedData.length != globalData.length && d.fill == "gray") {
+        selectedData = globalData;
+        individualSelectedData = selectedData;
+        max = 9.5;
+        min = 3;
+      }
+      else { //all bins were selected which selects only this bin or bin was gray so select it
+        selectedData = globalData.filter(function (elem) {
+          return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
+        });
+        individualSelectedData = selectedData; //overwrites the scatterplot selection
+        max = d.x0 + 0.5;
+        min = d.x0;
+      }
+      updateScatterPlotScale(globalData);
+      updateHistogram(globalData);
+}
+
+function mouseOverFunction(event, d) {
+  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
+  d3.select(this).attr("r", 6);
+}
+
+function mouseLeaveFunction(event, d) {
+  d3.select(this).style("stroke-width", "1px");
+  d3.select(this).attr("r", 3);
+}
+
+// Update functions
 function updateScatterPlot(data) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
@@ -280,15 +320,7 @@ function updateScatterPlot(data) {
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
-    .on("click", function (event, d) {
-      individualSelectedData.push(
-        data.filter(function (elem) {
-          return d.members_count == elem.members_count && d.score == elem.score;
-        })[0]
-      );
-      updateHistogram(globalData);
-      updateScatterPlot(globalData);
-    })
+    .on("click", clickGrayCircle)
     .append("title")
     .text((d) => d.title);
   
@@ -307,25 +339,7 @@ function updateScatterPlot(data) {
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
-    .on("click", function (event, d) {
-      if (individualSelectedData.length != selectedData.length) {
-        individualSelectedData = individualSelectedData.filter(function (elem) {
-          return d.members_count != elem.members_count || d.score != elem.score;
-        });
-        if (individualSelectedData.length == 0)
-          individualSelectedData = selectedData;
-      }
-      else {
-        individualSelectedData = [];
-        individualSelectedData.push(
-          data.filter(function (elem) {
-            return d.members_count == elem.members_count && d.score == elem.score;
-          })[0]
-        );
-      }
-      updateHistogram(globalData);
-      updateScatterPlot(globalData);
-    })
+    .on("click", clickSelectedCircle)
     .append("title")
     .text((d) => d.title);
 }
@@ -393,25 +407,7 @@ function updateScatterPlotScale(data) {
         .style("stroke-width", 1)
         .on("mouseover", mouseOverFunction)
         .on("mouseleave", mouseLeaveFunction)
-        .on("click", function (event, d) {
-          if (individualSelectedData.length != selectedData.length) {
-            individualSelectedData = individualSelectedData.filter(function (elem) {
-              return d.members_count != elem.members_count || d.score != elem.score;
-            });
-            if (individualSelectedData.length == 0)
-              individualSelectedData = selectedData;
-          }
-          else {
-            individualSelectedData = [];
-            individualSelectedData.push(
-              data.filter(function (elem) {
-                return d.members_count == elem.members_count && d.score == elem.score;
-              })[0]
-            );
-          }
-          updateHistogram(globalData);
-          updateScatterPlot(globalData);
-        })
+        .on("click", clickSelectedCircle)
         .append("title")
         .text((d) => d.title);
     })
@@ -477,16 +473,7 @@ function updateHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    .on("click", function (event, d) {
-      selectedData = data.filter(function (elem) {
-        return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
-      });
-      individualSelectedData = selectedData;
-      updateHistogram(globalData);
-      max = d.x0 + 0.5;
-      min = d.x0;
-      updateScatterPlotScale(globalData);
-    })
+    .on("click", clickBin)
     .append("title")
     .text(function (d) {
       return d.length;
@@ -529,38 +516,9 @@ function updateHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    .on("click", function (event, d) {
-      if (selectedData.length != globalData.length) {
-        selectedData = globalData;
-        individualSelectedData = selectedData;
-        max = 9.5;
-        min = 3;
-      }
-      else {
-        selectedData = data.filter(function (elem) {
-          return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
-        });
-        individualSelectedData = selectedData;
-        max = d.x0 + 0.5;
-        min = d.x0;
-      }
-      updateScatterPlotScale(globalData);
-      updateHistogram(globalData);
-    })
+    .on("click", clickBin)
     .append("title")
     .text(function (d) {
       return d.length;
     });
-}
-
-// Triggered events
-
-function mouseOverFunction(event, d) {
-  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
-  d3.select(this).attr("r", 6);
-}
-
-function mouseLeaveFunction(event, d) {
-  d3.select(this).style("stroke-width", "1px");
-  d3.select(this).attr("r", 3);
 }
