@@ -42,6 +42,9 @@
   display: inline-flex;
   background-color: cornflowerblue;
   overflow: hidden;
+  border-style: solid none none none;
+  border-width: 2px;
+  border-color: grey;
 }
 #search_box_container img {
   position: relative;
@@ -67,12 +70,99 @@
 #anime_list {
   width: 100%;
   height: 42%;
+  position: relative;
   overflow-y: scroll;
-  background-color:aliceblue;
+  border-style: none none solid none;
+  border-width: 2px;
+  border-color: grey;
 }
 .anime_list_element {
+  width: 90%;
+  margin: 2%;
+  padding: 3%;
+  text-wrap: pretty;
+  height: fit-content;
+  background-color:aliceblue;
+  border-style: solid;
+  border-width: 1px;
+  border-color: lightblue;
+}
+.anime_list_element:hover {
+  background-color:cornflowerblue;
+}
+#season_filter {
+  margin: 1% 0;
+  text-align: center;
+}
+#season_buttons_container {
+  width: 60%;
+  height: 12%;
+  display: grid;
+  grid-template-columns: 50% 50%;
+  gap: 2px;
+  margin: auto;
+}
+.season_button {
+  height: fit-content;
+  padding: 2px;
+  color: white;
+  text-align: center;
+}
+#winter_button {
+  background-color: darkorchid;
+}
+#winter_button:hover {
+  border-style: solid;
+  border-width: 2px;
+  border-color: darkorchid;
+  background-color: white;
+  color: darkorchid;
+}
+#spring_button {
+  background-color: limegreen;
+}
+#spring_button:hover {
+  border-style: solid;
+  border-width: 2px;
+  border-color: limegreen;
+  background-color: white;
+  color: limegreen;
+}
+#summer_button {
+  background-color: gold;
+}
+#summer_button:hover {
+  border-style: solid;
+  border-width: 2px;
+  border-color: gold;
+  background-color: white;
+  color: gold;
+}
+#fall_button {
+  background-color: darkorange;
+}
+#fall_button:hover {
+  border-style: solid;
+  border-width: 2px;
+  border-color: darkorange;
+  background-color: white;
+  color: darkorange;
+}
+#popularity_filter {
   width: 100%;
-  height: 14.3%;
+  height: 8%;
+}
+#score_filter {
+  width: 100%;
+  height: 10%;
+}
+#genre_filter {
+  width: 100%;
+  height: 8%;
+}
+#source_filter {
+  width: 100%;
+  height: 8%;
 }
 #ScentedPlot {
   background-color: rgba(255, 255, 255, 0.8);
