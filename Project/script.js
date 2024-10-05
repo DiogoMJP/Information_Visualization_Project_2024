@@ -115,7 +115,7 @@ function createScatterPlot(data) {
     .attr("y", margin - 10)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
-    .text("Rating");
+    .text("Score");
 }
 
 function createHistogram(data) {
