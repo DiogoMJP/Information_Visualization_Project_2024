@@ -95,7 +95,7 @@
   text-align: center;
 }
 #season_buttons_container {
-  width: 60%;
+  width: 80%;
   position: relative;
   display: grid;
   grid-template-columns: 50% 50%;

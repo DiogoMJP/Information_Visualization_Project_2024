@@ -21,6 +21,7 @@ function createAnimeList(data) {
   for (anime of data) {
     let anime_list_element = document.createElement("div")
     anime_list_element.setAttribute("class", "anime_list_element");
+    anime_list_element.setAttribute("onclick", "clickSelectedAnime("+anime.anime_id+");")
     anime_list_element.innerText += anime.title;
     anime_list.append(anime_list_element);
   }
@@ -221,6 +222,7 @@ function clickSelectedCircle(event, d) {
   if (individualSelectedData.length == selectedData.length) {
     individualSelectedData = selectedData.filter(function (elem) {
       return d.members_count == elem.members_count && d.score == elem.score;
+
     });
   }
   else { //if they aren't all selected it deselects that point
@@ -241,6 +243,26 @@ function clickGrayCircle(event, d) {
       return d.members_count == elem.members_count && d.score == elem.score;
     })[0]
   );
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
+function clickSelectedAnime(id) {
+  //the point being gray means clicking it always results in adding it to the selection
+  if (individualSelectedData.length == selectedData.length) {
+    individualSelectedData = selectedData.filter(function (elem) {
+      return id == elem.anime_id;
+
+    });
+  }
+  else { //if they aren't all selected it deselects that point
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return id != elem.anime_id;
+    });
+    if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected again
+      individualSelectedData = selectedData;
+  }
+  console.log(individualSelectedData);
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
