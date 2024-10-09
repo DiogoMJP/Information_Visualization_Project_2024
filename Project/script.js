@@ -18,12 +18,19 @@ function init() {
 
 function createAnimeList(data) {
   anime_list = document.getElementById("anime_list")
-  for (anime of data) {
+  anime_list.innerHTML = "";
+  for (anime of selectedData) {
     let anime_list_element = document.createElement("div")
-    anime_list_element.setAttribute("class", "anime_list_element");
-    anime_list_element.setAttribute("onclick", "clickSelectedAnime("+anime.anime_id+");")
+    anime_list_element.setAttribute("class", "anime_list_element unclicked");
+    anime_list_element.setAttribute("id", anime.anime_id);
+    anime_list_element.setAttribute("onclick", "clickUnselectedAnime("+anime.anime_id+");")
     anime_list_element.innerText += anime.title;
     anime_list.append(anime_list_element);
+  }
+  for (anime of individualSelectedData) {
+    let anime_list_element = document.getElementById(anime.anime_id)
+    anime_list_element.setAttribute("class", "anime_list_element clicked");
+    anime_list_element.setAttribute("onclick", "clickSelectedAnime("+anime.anime_id+");")
   }
 }
 
@@ -232,6 +239,8 @@ function clickSelectedCircle(event, d) {
     if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected again
       individualSelectedData = selectedData;
   }
+
+  createAnimeList(globalData);
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
@@ -243,6 +252,8 @@ function clickGrayCircle(event, d) {
       return d.members_count == elem.members_count && d.score == elem.score;
     })[0]
   );
+
+  createAnimeList(globalData);
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
@@ -262,7 +273,21 @@ function clickSelectedAnime(id) {
     if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected again
       individualSelectedData = selectedData;
   }
-  console.log(individualSelectedData);
+
+  createAnimeList(globalData);
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
+function clickUnselectedAnime(id) {
+  //the point being gray means clicking it always results in adding it to the selection
+  individualSelectedData.push(
+    selectedData.filter(function (elem) {
+      return id == elem.anime_id;
+    })[0]
+  );
+  
+  createAnimeList(globalData);
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
@@ -285,6 +310,7 @@ function clickSelectedBin(event, d) {
   }
   updateScatterPlotScale(globalData);
   updateHistogram(globalData);
+  createAnimeList(globalData);
 }
 
 function clickGrayBin(event, d) {
@@ -297,6 +323,7 @@ function clickGrayBin(event, d) {
   min = d.x0;
   updateScatterPlotScale(globalData);
   updateHistogram(globalData);
+  createAnimeList(globalData);
 }
 
 function mouseOverFunction(event, d) {
