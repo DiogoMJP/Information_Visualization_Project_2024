@@ -10,16 +10,34 @@ function init() {
     globalData = data;
     selectedData = data;
     individualSelectedData = data;
-    createAnimeList(globalData);
+    createAnimeList();
     createScatterPlot(globalData);
     createHistogram(globalData);
   });
 }
 
-function createAnimeList(data) {
+function createAnimeList() {
+  input = document.getElementById('search_box');
+  filter = input.value.toUpperCase();
   anime_list = document.getElementById("anime_list")
   anime_list.innerHTML = "";
-  for (anime of selectedData) {
+
+  var animeListSelectedData, individualAnimeListSelectedData;
+  if (filter != "") {
+    animeListSelectedData = selectedData
+      .filter(function (elem) {
+        return elem.title.toUpperCase().indexOf(filter) > -1;
+      });
+    individualAnimeListSelectedData = individualSelectedData
+      .filter(function (elem) {
+        return elem.title.toUpperCase().indexOf(filter) > -1;
+      });
+  } else {
+    animeListSelectedData = selectedData;
+    individualAnimeListSelectedData = individualSelectedData;
+  }
+
+  for (anime of animeListSelectedData) {
     let anime_list_element = document.createElement("div")
     anime_list_element.setAttribute("class", "anime_list_element unclicked");
     anime_list_element.setAttribute("id", anime.anime_id);
@@ -27,7 +45,8 @@ function createAnimeList(data) {
     anime_list_element.innerText += anime.title;
     anime_list.append(anime_list_element);
   }
-  for (anime of individualSelectedData) {
+
+  for (anime of individualAnimeListSelectedData) {
     let anime_list_element = document.getElementById(anime.anime_id)
     anime_list_element.setAttribute("class", "anime_list_element clicked");
     anime_list_element.setAttribute("onclick", "clickSelectedAnime("+anime.anime_id+");")
@@ -240,7 +259,7 @@ function clickSelectedCircle(event, d) {
       individualSelectedData = selectedData;
   }
 
-  createAnimeList(globalData);
+  createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
@@ -253,7 +272,7 @@ function clickGrayCircle(event, d) {
     })[0]
   );
 
-  createAnimeList(globalData);
+  createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
@@ -274,7 +293,7 @@ function clickSelectedAnime(id) {
       individualSelectedData = selectedData;
   }
 
-  createAnimeList(globalData);
+  createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
@@ -287,7 +306,7 @@ function clickUnselectedAnime(id) {
     })[0]
   );
   
-  createAnimeList(globalData);
+  createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
@@ -310,7 +329,7 @@ function clickSelectedBin(event, d) {
   }
   updateScatterPlotScale(globalData);
   updateHistogram(globalData);
-  createAnimeList(globalData);
+  createAnimeList();
 }
 
 function clickGrayBin(event, d) {
@@ -323,7 +342,7 @@ function clickGrayBin(event, d) {
   min = d.x0;
   updateScatterPlotScale(globalData);
   updateHistogram(globalData);
-  createAnimeList(globalData);
+  createAnimeList();
 }
 
 function mouseOverFunction(event, d) {
