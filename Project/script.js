@@ -108,7 +108,7 @@ function createScatterPlot(data) {
     .on("mouseleave", mouseLeaveFunction)
     .on("click", clickSelectedCircle)
     .append("title")
-    .text((d) => d.title);
+    .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
   svg
     .append("g")
     .attr("class", "xAxis")
@@ -404,7 +404,7 @@ function updateScatterPlot(data) {
     .on("mouseleave", mouseLeaveFunction)
     .on("click", clickGrayCircle)
     .append("title")
-    .text((d) => d.title);
+    .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
   
   selectedGroup
     .selectAll("circle")
@@ -423,7 +423,7 @@ function updateScatterPlot(data) {
     .on("mouseleave", mouseLeaveFunction)
     .on("click", clickSelectedCircle)
     .append("title")
-    .text((d) => d.title);
+    .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
 }
 
 function updateScatterPlotScale(data) {
@@ -491,7 +491,7 @@ function updateScatterPlotScale(data) {
         .on("mouseleave", mouseLeaveFunction)
         .on("click", clickSelectedCircle)
         .append("title")
-        .text((d) => d.title);
+        .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
     })
 }
 
