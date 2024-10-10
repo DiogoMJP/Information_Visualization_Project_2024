@@ -43,7 +43,7 @@ function createAnimeList() {
     let anime_list_element = document.createElement("div")
     anime_list_element.setAttribute("class", "anime_list_element unclicked");
     anime_list_element.setAttribute("id", anime.anime_id);
-    anime_list_element.setAttribute("onclick", "clickUnselectedAnime("+anime.anime_id+");")
+    anime_list_element.setAttribute("onclick", "clickAnime("+anime.anime_id+");")
     anime_list_element.innerText += anime.title;
     anime_list.append(anime_list_element);
   }
@@ -51,7 +51,6 @@ function createAnimeList() {
   for (anime of individualAnimeListSelectedData) {
     let anime_list_element = document.getElementById(anime.anime_id)
     anime_list_element.setAttribute("class", "anime_list_element clicked");
-    anime_list_element.setAttribute("onclick", "clickSelectedAnime("+anime.anime_id+");")
   }
 }
 
@@ -105,7 +104,7 @@ function createScatterPlot(data) {
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
-    .on("click", clickUnselectedCircle)
+    .on("click", clickCircle)
     .append("title")
     .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
   svg
@@ -196,7 +195,7 @@ function createHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    .on("click", clickSelectedBin)
+    .on("click", clickBin)
     .append("title")
     .text(function (d) {
       return d.length;
@@ -243,6 +242,26 @@ function createHistogram(data) {
 
 
 // Interaction managers
+function clickAnime(id) {
+  //if all points are selected, it means its the first selection so make that the only selected point
+  if (individualSelectedData.some((anime) => anime.anime_id == id)) {
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return id != elem.anime_id;
+    });
+  } else {
+    individualSelectedData.push(  
+      selectedData.filter(function (elem) {
+        return id == elem.anime_id;
+      })[0]
+    );
+  }
+
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
 function clickSeason(name) {
   //the point being gray means clicking it always results in adding it to the selection
   if (season == name) season = null;
@@ -254,11 +273,19 @@ function clickSeason(name) {
   updateScatterPlot(globalData);
 }
 
-function clickSelectedAnime(id) {
+function clickCircle(event, d) {
   //if all points are selected, it means its the first selection so make that the only selected point
-  individualSelectedData = individualSelectedData.filter(function (elem) {
-    return id != elem.anime_id;
-  });
+  if (individualSelectedData.some((anime) => anime.anime_id == d.anime_id)) {
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return d.anime_id != elem.anime_id;
+    });
+  } else {
+    individualSelectedData.push(  
+      selectedData.filter(function (elem) {
+        return d.anime_id == elem.anime_id;
+      })[0]
+    );
+  }
 
   updateData();
   createAnimeList();
@@ -266,60 +293,13 @@ function clickSelectedAnime(id) {
   updateScatterPlot(globalData);
 }
 
-function clickUnselectedAnime(id) {
-  //the point being gray means clicking it always results in adding it to the selection
-  individualSelectedData.push(  
-    selectedData.filter(function (elem) {
-      return id == elem.anime_id;
-    })[0]
-  );
-
-  updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
-}
-
-function clickSelectedCircle(event, d) {
-  //if all points are selected, it means its the first selection so make that the only selected point
-  individualSelectedData = individualSelectedData.filter(function (elem) {
-    return d.anime_id != elem.anime_id;
-  });
-
-  updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
-}
-
-function clickUnselectedCircle(event, d) {
-  //the point being gray means clicking it always results in adding it to the selection
-  individualSelectedData.push(  
-    selectedData.filter(function (elem) {
-      return d.anime_id == elem.anime_id;
-    })[0]
-  );
-
-  updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
-}
-
-function clickSelectedBin(event, d) {
+function clickBin(event, d) {
   // select a bin if none was selected; else, select none
   prev_bin = bin;
-  bin = bin != null ? bin = null : bin = d.x0;
-
-  updateData();
-  createAnimeList();
-  updateScatterPlot(globalData);
-  updateHistogram(globalData);
-}
-
-function clickUnselectedBin(event, d) {
-  prev_bin = bin;
-  bin = d.x0;
+  if (bin == d.x0)
+    bin = bin != null ? bin = null : bin = d.x0;
+  else
+    bin = d.x0
 
   updateData();
   createAnimeList();
@@ -423,12 +403,10 @@ function updateScatterPlot(data) {
     svg
       .selectAll("circle")
       .filter((data, _) => selectedData.includes(data))
-      .on("click", clickUnselectedCircle)
       .attr("fill", "gray");
     svg
       .selectAll("circle")
       .filter((data) => individualSelectedData.includes(data))
-      .on("click", clickSelectedCircle)
       .attr("fill", function (d) {
         return colorScale(d.season);
       });
@@ -436,7 +414,7 @@ function updateScatterPlot(data) {
     svg
       .selectAll("circle")
       .filter((data, _) => selectedData.includes(data))
-      .on("click", clickUnselectedCircle)
+      .on("click", clickCircle)
       .attr("fill", function (d) {
         return colorScale(d.season);
       });
@@ -503,7 +481,7 @@ function updateHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    .on("click", clickUnselectedBin)
+    .on("click", clickBin)
     .append("title")
     .text(function (d) {
       return d.length;
@@ -546,7 +524,7 @@ function updateHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    .on("click", clickSelectedBin)
+    .on("click", clickBin)
     .append("title")
     .text(function (d) {
       return d.length;
