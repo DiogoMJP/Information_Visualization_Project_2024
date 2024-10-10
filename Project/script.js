@@ -1,11 +1,11 @@
 var globalData;
 var selectedData = [];
-var unselectedData = [];
 var individualSelectedData = [];
 
 var bin = null;
+var prev_bin = null;
 var season = null;
-var selected_anime_id = [];
+var changedLayout = false;
 
 // Initialization of the dashboard
 function init() {
@@ -241,7 +241,45 @@ function createHistogram(data) {
     .text("Count");
 }
 
+
 // Interaction managers
+function clickSeason(name) {
+  //the point being gray means clicking it always results in adding it to the selection
+  if (season == name) season = null;
+  else season = name;
+
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
+function clickSelectedAnime(id) {
+  //if all points are selected, it means its the first selection so make that the only selected point
+  individualSelectedData = individualSelectedData.filter(function (elem) {
+    return id != elem.anime_id;
+  });
+
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
+function clickUnselectedAnime(id) {
+  //the point being gray means clicking it always results in adding it to the selection
+  individualSelectedData.push(  
+    selectedData.filter(function (elem) {
+      return id == elem.anime_id;
+    })[0]
+  );
+
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
 function clickSelectedCircle(event, d) {
   //if all points are selected, it means its the first selection so make that the only selected point
   individualSelectedData = individualSelectedData.filter(function (elem) {
@@ -268,34 +306,9 @@ function clickUnselectedCircle(event, d) {
   updateScatterPlot(globalData);
 }
 
-function clickSelectedAnime(id) {
-  //the point being gray means clicking it always results in adding it to the selection
-  individualSelectedData = individualSelectedData.filter(function (elem) {
-    return id != elem.anime_id;
-  });
-
-  updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
-}
-
-function clickUnselectedAnime(id) {
-  //the point being gray means clicking it always results in adding it to the selection
-  individualSelectedData.push(
-    selectedData.filter(function (elem) {
-      return id == elem.anime_id;
-    })[0]
-  );
-  
-  updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
-}
-
 function clickSelectedBin(event, d) {
   // select a bin if none was selected; else, select none
+  prev_bin = bin;
   bin = bin != null ? bin = null : bin = d.x0;
 
   updateData();
@@ -305,6 +318,7 @@ function clickSelectedBin(event, d) {
 }
 
 function clickUnselectedBin(event, d) {
+  prev_bin = bin;
   bin = d.x0;
 
   updateData();
@@ -326,13 +340,20 @@ function updateData() {
   }
   
   if (season != null) {
-    selectedData = globalData.filter(function (elem) {
-      return bin <= elem.score && bin + 0.5 > elem.score;
+    selectedData = selectedData.filter(function (elem) {
+      return elem.season == season;
     });
     individualSelectedData = individualSelectedData.filter(function (elem) {
-      return bin <= elem.score && bin + 0.5 > elem.score;
+      return elem.season == season;
     });
   }
+
+  if (prev_bin != bin)
+    changedLayout = true;
+  else
+    changedLayout = false;
+
+  prev_bin = bin;
 }
 
 function mouseOverFunction(event, d) {
@@ -355,6 +376,7 @@ function updateScatterPlot(data) {
   
   svg
     .selectAll("circle")
+    .filter((data, index) => selectedData.includes(data))
     .style("opacity", 1);
   
   const xScale = d3
@@ -366,26 +388,33 @@ function updateScatterPlot(data) {
     .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
     .range([margin, svgHeight - margin - 50]);
 
-  svg
-    .select("g.yAxis")
-    .transition()
-    .duration(1000)
-    .attr("transform", `translate(${margin},0)`)
-    .call(d3.axisLeft(yScale));
+  if (changedLayout) {
+    svg
+      .select("g.yAxis")
+      .transition()
+      .duration(1000)
+      .attr("transform", `translate(${margin},0)`)
+      .call(d3.axisLeft(yScale));
 
-  svg
-    .selectAll("circle")
-    .transition()
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score))
-    .duration(1000)
-    .end()
-    .then(() => {
-      svg
-        .selectAll("circle")
-        .filter((data, index) => !selectedData.includes(data))
-        .style("opacity", 0);
-    });
+    svg
+      .selectAll("circle")
+      .transition()
+      .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+      .attr("cy", (d) => yScale(d.score))
+      .duration(1000)
+      .end()
+      .then(() => {
+        svg
+          .selectAll("circle")
+          .filter((data, index) => !selectedData.includes(data))
+          .style("opacity", 0);
+      });
+  } else {
+    svg
+      .selectAll("circle")
+      .filter((data, index) => !selectedData.includes(data))
+      .style("opacity", 0);
+  }
   
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
