@@ -1,15 +1,17 @@
 var globalData;
 var selectedData = [];
+var unselectedData = [];
 var individualSelectedData = [];
-var max = 9.5;
-var min = 3;
+
+var bin = null;
+var season = null;
+var selected_anime_id = [];
 
 // Initialization of the dashboard
 function init() {
   d3.json("data.json").then(function (data) {
     globalData = data;
     selectedData = data;
-    individualSelectedData = data;
     createAnimeList();
     createScatterPlot(globalData);
     createHistogram(globalData);
@@ -90,12 +92,9 @@ function createScatterPlot(data) {
     .attr("width", svgWidth)
     .attr("height", svgHeight);
 
-  svg.append("g").attr("class", "grayGroup");
-  let selectedGroup = svg.append("g").attr("class", "selectedGroup");
-    
-  selectedGroup
+  svg
     .selectAll("circle")
-    .data(data, (d) => d.title)
+    .data(selectedData, (d) => d.title)
     .enter()
     .append("circle")
     .attr("r", 3)
@@ -106,7 +105,7 @@ function createScatterPlot(data) {
     .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
-    .on("click", clickSelectedCircle)
+    .on("click", clickUnselectedCircle)
     .append("title")
     .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
   svg
@@ -245,33 +244,25 @@ function createHistogram(data) {
 // Interaction managers
 function clickSelectedCircle(event, d) {
   //if all points are selected, it means its the first selection so make that the only selected point
-  if (individualSelectedData.length == selectedData.length) {
-    individualSelectedData = selectedData.filter(function (elem) {
-      return d.members_count == elem.members_count && d.score == elem.score;
+  individualSelectedData = individualSelectedData.filter(function (elem) {
+    return d.anime_id != elem.anime_id;
+  });
 
-    });
-  }
-  else { //if they aren't all selected it deselects that point
-    individualSelectedData = individualSelectedData.filter(function (elem) {
-      return d.members_count != elem.members_count || d.score != elem.score;
-    });
-    if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected again
-      individualSelectedData = selectedData;
-  }
-
+  updateData();
   createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
 
-function clickGrayCircle(event, d) {
+function clickUnselectedCircle(event, d) {
   //the point being gray means clicking it always results in adding it to the selection
-  individualSelectedData.push(
+  individualSelectedData.push(  
     selectedData.filter(function (elem) {
-      return d.members_count == elem.members_count && d.score == elem.score;
+      return d.anime_id == elem.anime_id;
     })[0]
   );
 
+  updateData();
   createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
@@ -279,20 +270,11 @@ function clickGrayCircle(event, d) {
 
 function clickSelectedAnime(id) {
   //the point being gray means clicking it always results in adding it to the selection
-  if (individualSelectedData.length == selectedData.length) {
-    individualSelectedData = selectedData.filter(function (elem) {
-      return id == elem.anime_id;
+  individualSelectedData = individualSelectedData.filter(function (elem) {
+    return id != elem.anime_id;
+  });
 
-    });
-  }
-  else { //if they aren't all selected it deselects that point
-    individualSelectedData = individualSelectedData.filter(function (elem) {
-      return id != elem.anime_id;
-    });
-    if (individualSelectedData.length == 0) //if this deselects the last point then all points are selected again
-      individualSelectedData = selectedData;
-  }
-
+  updateData();
   createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
@@ -306,43 +288,51 @@ function clickUnselectedAnime(id) {
     })[0]
   );
   
+  updateData();
   createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
 }
 
 function clickSelectedBin(event, d) {
-  //bin was selected so deselecting it makes everything selected again
-  if (selectedData.length != globalData.length) {
-    selectedData = globalData;
-    individualSelectedData = selectedData;
-    max = 9.5;
-    min = 3;
-  }
-  else { //all bins were selected which selects only this bin
-    selectedData = globalData.filter(function (elem) {
-      return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
-    });
-    individualSelectedData = selectedData; //overwrites the scatterplot selection
-    max = d.x0 + 0.5;
-    min = d.x0;
-  }
-  updateScatterPlotScale(globalData);
-  updateHistogram(globalData);
+  // select a bin if none was selected; else, select none
+  bin = bin != null ? bin = null : bin = d.x0;
+
+  updateData();
   createAnimeList();
+  updateScatterPlot(globalData);
+  updateHistogram(globalData);
 }
 
-function clickGrayBin(event, d) {
-  //change selected bin
-  selectedData = globalData.filter(function (elem) {
-    return d.x0 <= elem.score && d.x0 + 0.5 > elem.score;
-  });
-  individualSelectedData = selectedData; //overwrites the scatterplot selection
-  max = d.x0 + 0.5;
-  min = d.x0;
-  updateScatterPlotScale(globalData);
-  updateHistogram(globalData);
+function clickUnselectedBin(event, d) {
+  bin = d.x0;
+
+  updateData();
   createAnimeList();
+  updateScatterPlot(globalData);
+  updateHistogram(globalData);
+}
+
+function updateData() {
+  if (bin != null) {
+    selectedData = globalData.filter(function (elem) {
+      return bin <= elem.score && bin + 0.5 > elem.score;
+    });
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return bin <= elem.score && bin + 0.5 > elem.score;
+    });
+  } else {
+    selectedData = globalData;
+  }
+  
+  if (season != null) {
+    selectedData = globalData.filter(function (elem) {
+      return bin <= elem.score && bin + 0.5 > elem.score;
+    });
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return bin <= elem.score && bin + 0.5 > elem.score;
+    });
+  }
 }
 
 function mouseOverFunction(event, d) {
@@ -361,22 +351,21 @@ function updateScatterPlot(data) {
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
   const margin = 50;
 
-  const colorScale = d3.scaleOrdinal()
-    .domain(["Spring", "Summer", "Fall", "Winter"])
-    .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
+  const svg = d3.select("#ScatterPlot").select("svg");
+  
+  svg
+    .selectAll("circle")
+    .style("opacity", 1);
+  
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
     .range([margin + 50, svgWidth - margin]);
   const yScale = d3
     .scaleLinear()
-    .domain([max, min])
+    .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
     .range([margin, svgHeight - margin - 50]);
-  const svg = d3
-    .select("#ScatterPlot")
-    .select("svg")
-    .attr("width", svgWidth)
-    .attr("height", svgHeight);
+
   svg
     .select("g.yAxis")
     .transition()
@@ -384,115 +373,45 @@ function updateScatterPlot(data) {
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
 
-  let grayGroup = svg.select("g.grayGroup");
-  let selectedGroup = svg.select("g.selectedGroup");
-  
-  svg.selectAll("g.selectedGroup circle, g.grayGroup circle").remove();
-  
-  grayGroup
+  svg
     .selectAll("circle")
-    .data(selectedData, (d) => d.title)
-    .enter()
-    .append("circle")
-    .attr("r", 3)
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score))
-    .attr("fill", "gray")
-    .style("stroke", "gray")
-    .style("stroke-width", 1)
-    .on("mouseover", mouseOverFunction)
-    .on("mouseleave", mouseLeaveFunction)
-    .on("click", clickGrayCircle)
-    .append("title")
-    .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
-  
-  selectedGroup
-    .selectAll("circle")
-    .data(individualSelectedData, (d) => d.title)
-    .enter()
-    .append("circle")
-    .attr("r", 3)
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score))
-    .attr("fill", function (d) {
-      return colorScale(d.season);
-    })
-    .style("stroke", "gray")
-    .style("stroke-width", 1)
-    .on("mouseover", mouseOverFunction)
-    .on("mouseleave", mouseLeaveFunction)
-    .on("click", clickSelectedCircle)
-    .append("title")
-    .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
-}
-
-function updateScatterPlotScale(data) {
-  const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
-  const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
-  const margin = 50;
-
-  const colorScale = d3.scaleOrdinal()
-    .domain(["Spring", "Summer", "Fall", "Winter"])
-    .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
-  const xScale = d3
-    .scaleLinear()
-    .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
-    .range([margin + 50, svgWidth - margin]);
-  const yScale = d3
-    .scaleLinear()
-    .domain([max, min])
-    .range([margin, svgHeight - margin - 50]);
-  const svg = d3
-    .select("#ScatterPlot")
-    .select("svg")
-    .attr("width", svgWidth)
-    .attr("height", svgHeight);
-  svg
-    .select("g.yAxis")
     .transition()
-    .duration(1000)
-    .attr("transform", `translate(${margin},0)`)
-    .call(d3.axisLeft(yScale));
-
-  let selectedGroup = svg.select("g.selectedGroup");
-  svg
-    .selectAll("g.grayGroup circle")
-    .data(data, (d) => d.title)
-    .transition()
-    .attr("r", 3)
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
     .duration(1000)
-    .remove()
-    .end()
-  svg
-    .selectAll("g.selectedGroup circle")
-    .data(data, (d) => d.title)
-    .transition()
-    .attr("r", 3)
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score))
-    .duration(1000)
-    .remove()
     .end()
     .then(() => {
-      selectedGroup
+      svg
         .selectAll("circle")
-        .data(selectedData, (d) => d.title)
-        .enter()
-        .append("circle")
-        .attr("r", 3)
-        .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-        .attr("cy", (d) => yScale(d.score))
-        .attr("fill", function(d) { return colorScale(d.season); })
-        .style("stroke", "gray")
-        .style("stroke-width", 1)
-        .on("mouseover", mouseOverFunction)
-        .on("mouseleave", mouseLeaveFunction)
-        .on("click", clickSelectedCircle)
-        .append("title")
-        .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
-    })
+        .filter((data, index) => !selectedData.includes(data))
+        .style("opacity", 0);
+    });
+  
+  const colorScale = d3.scaleOrdinal()
+    .domain(["Spring", "Summer", "Fall", "Winter"])
+    .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
+  if (individualSelectedData.length != 0) {
+    svg
+      .selectAll("circle")
+      .filter((data, _) => selectedData.includes(data))
+      .on("click", clickUnselectedCircle)
+      .attr("fill", "gray");
+    svg
+      .selectAll("circle")
+      .filter((data) => individualSelectedData.includes(data))
+      .on("click", clickSelectedCircle)
+      .attr("fill", function (d) {
+        return colorScale(d.season);
+      });
+  } else {
+    svg
+      .selectAll("circle")
+      .filter((data, _) => selectedData.includes(data))
+      .on("click", clickUnselectedCircle)
+      .attr("fill", function (d) {
+        return colorScale(d.season);
+      });
+  }
 }
 
 function updateHistogram(data) {
@@ -555,7 +474,7 @@ function updateHistogram(data) {
     .on("mouseleave", function (event, d) {
       d3.select(this).style("stroke-width", "1px");
     })
-    .on("click", clickGrayBin)
+    .on("click", clickUnselectedBin)
     .append("title")
     .text(function (d) {
       return d.length;
