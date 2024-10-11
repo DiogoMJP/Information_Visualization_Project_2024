@@ -165,7 +165,7 @@ function createHistogram(data) {
   const yScale = d3
     .scaleLinear()
     .domain([0, d3.max(bins, function (d) {return d.length;})])
-    .range([svgHeight - margin, margin]);
+    .range([svgHeight - margin, margin - 25]);
 
   const svg = d3
     .select("#Histogram")
@@ -237,7 +237,7 @@ function createHistogram(data) {
   svg
     .append("text")
     .attr("x", margin)
-    .attr("y", margin - 10)
+    .attr("y", margin - 30)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Count");
@@ -270,33 +270,48 @@ function clickSeason(name) {
   if (season == name) season = null;
   else season = name;
 
+  // Update active button styles
+  updateSeasonButtons();
+  individualSelectedData = [];
+
+  // Update data and visuals
   updateData();
   createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
+  }
+
+function updateSeasonButtons() {
+  document.querySelectorAll('.season_button').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+
+  if (season != null) {
+    document.getElementById(season.toLowerCase() + '_button').classList.add('active');
+  }
 }
 
 function resetIndividualSelection() {
   individualSelectedData = [];
-
   updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
+  
+  // Use setTimeout to ensure the DOM updates after data reset
+  setTimeout(() => {
+    createAnimeList();
+    updateHistogram(globalData);
+    updateScatterPlot(globalData);
+  }, 0);
 }
 
 function clickCircle(event, d) {
-  //if all points are selected, it means its the first selection so make that the only selected point
+  if (!d || !d.anime_id) return;  // Exit if data is invalid
+
   if (individualSelectedData.some((anime) => anime.anime_id == d.anime_id)) {
     individualSelectedData = individualSelectedData.filter(function (elem) {
       return d.anime_id != elem.anime_id;
     });
   } else {
-    individualSelectedData.push(  
-      selectedData.filter(function (elem) {
-        return d.anime_id == elem.anime_id;
-      })[0]
-    );
+    individualSelectedData.push(d);
   }
 
   updateData();
@@ -365,16 +380,19 @@ function updateData() {
 }
 
 function mouseOverFunction(event, d) {
-  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
-  d3.select(this).attr("r", 6);
+  d3.select(this)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 6);
   
   if (mouse_down)
     brushCircle(d);
 }
 
 function mouseLeaveFunction(event, d) {
-  d3.select(this).style("stroke-width", "1px");
-  d3.select(this).attr("r", 3);
+  d3.select(this)
+    .style("stroke-width", "1px")
+    .attr("r", 3);
 }
 
 // Update functions
@@ -384,71 +402,69 @@ function updateScatterPlot(data) {
   const margin = 50;
 
   const svg = d3.select("#ScatterPlot").select("svg");
-  
-  svg
-    .selectAll("circle")
-    .filter((data, index) => selectedData.includes(data))
-    .style("opacity", 1);
-  
+
+  // Define scales
   const xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
     .range([margin + 50, svgWidth - margin]);
+
   const yScale = d3
     .scaleLinear()
     .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
     .range([margin, svgHeight - margin - 50]);
 
-  if (changedLayout) {
-    svg
-      .select("g.yAxis")
-      .transition()
-      .duration(1000)
-      .attr("transform", `translate(${margin},0)`)
-      .call(d3.axisLeft(yScale));
-
-    svg
-      .selectAll("circle")
-      .transition()
-      .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-      .attr("cy", (d) => yScale(d.score))
-      .duration(1000)
-      .end()
-      .then(() => {
-        svg
-          .selectAll("circle")
-          .filter((data, index) => !selectedData.includes(data))
-          .style("opacity", 0);
-      });
-  } else {
-    svg
-      .selectAll("circle")
-      .filter((data, index) => !selectedData.includes(data))
-      .style("opacity", 0);
-  }
-  
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
+
+  // Remove circles that are no longer in the data
+  svg.selectAll("circle")
+    .filter(d => !selectedData.some(sd => sd.anime_id === d.anime_id))
+    .remove();
+  
+  // Update existing circles and add new ones
+  const circles = svg.selectAll("circle")
+    .data(selectedData, d => d.anime_id);
+  
+  circles.enter()
+    .append("circle")
+    .attr("r", 3)
+    .merge(circles)
+    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", (d) => yScale(d.score))
+    .style("opacity", 1)
+    .style("stroke", "grey")  // Add stroke
+    .style("stroke-width", 1)  // Add stroke width
+    .on("mouseover", mouseOverFunction)
+    .on("mouseleave", mouseLeaveFunction)
+    .on("click", clickCircle);
+
+  circles.exit().remove();
+
+  // Update axes
+  svg.select("g.xAxis")
+    .transition()
+    .duration(1000)
+    .attr("transform", `translate(0,${svgHeight - margin})`)
+    .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
+
+  svg.select("g.yAxis")
+    .transition()
+    .duration(1000)
+    .attr("transform", `translate(${margin},0)`)
+    .call(d3.axisLeft(yScale));
+
+  // Update colors based on selection
   if (individualSelectedData.length != 0) {
-    svg
-      .selectAll("circle")
-      .filter((data, _) => selectedData.includes(data))
+    svg.selectAll("circle")
       .attr("fill", "gray");
-    svg
-      .selectAll("circle")
+    svg.selectAll("circle")
       .filter((data) => individualSelectedData.includes(data))
-      .attr("fill", function (d) {
-        return colorScale(d.season);
-      });
+      .attr("fill", (d) => colorScale(d.season));
   } else {
-    svg
-      .selectAll("circle")
-      .filter((data, _) => selectedData.includes(data))
-      .on("click", clickCircle)
-      .attr("fill", function (d) {
-        return colorScale(d.season);
-      });
+    svg.selectAll("circle")
+      .attr("fill", (d) => colorScale(d.season));
   }
 }
 
@@ -472,7 +488,7 @@ function updateHistogram(data) {
   const yScale = d3
     .scaleLinear()
     .domain([0, d3.max(bins, function (d) {return d.length;})])
-    .range([svgHeight - margin, margin]);
+    .range([svgHeight - margin, margin - 25]);
 
   const svg = d3
     .select("#Histogram")
@@ -537,13 +553,14 @@ function updateHistogram(data) {
     })
     .style("position", "relative")
     .style("fill", "steelblue")
-    .style("stroke", function (d) {
-      res = "black";
+    .style("stroke", "black")
+    .style("fill", function (d) {
+      res = "steelblue";
       if (individualSelectedData.length != selectedData.length) {
         individualSelectedData.forEach((elem) => {
           if (elem.score >= d.x0 && elem.score < d.x0 + 0.5) {
             d3.select(this).raise();
-            res = "red";
+            res = "darkblue";
           }
         });
       }
