@@ -7,6 +7,9 @@ var prev_bin = null;
 var season = null;
 var changedLayout = false;
 
+mouse_down = false
+
+
 // Initialization of the dashboard
 function init() {
   d3.json("data.json").then(function (data) {
@@ -293,6 +296,22 @@ function clickCircle(event, d) {
   updateScatterPlot(globalData);
 }
 
+function brushCircle(d) {
+  //if all points are selected, it means its the first selection so make that the only selected point
+  if (!individualSelectedData.some((anime) => anime.anime_id == d.anime_id)) {
+    individualSelectedData.push(  
+      selectedData.filter(function (elem) {
+        return d.anime_id == elem.anime_id;
+      })[0]
+    );
+  }
+
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
 function clickBin(event, d) {
   // select a bin if none was selected; else, select none
   prev_bin = bin;
@@ -339,6 +358,9 @@ function updateData() {
 function mouseOverFunction(event, d) {
   d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
   d3.select(this).attr("r", 6);
+  
+  if (mouse_down)
+    brushCircle(d);
 }
 
 function mouseLeaveFunction(event, d) {
@@ -529,4 +551,14 @@ function updateHistogram(data) {
     .text(function (d) {
       return d.length;
     });
+}
+
+
+document.body.onmousedown = function(evt) {
+  if (evt.buttons & 1)
+    mouse_down = true;
+}
+document.body.onmouseup = function(evt) {
+  if (!(evt.buttons & 1))
+    mouse_down = false;
 }
