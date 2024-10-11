@@ -217,6 +217,14 @@
 }
 #ScatterPlot {
   grid-row: span 2;
+  display: flex;
+  justify-content: center;
+}
+#individual_selection_reset_button {
+  font-size: 12px;
+  margin: 4px;
+  position: fixed;
+  background-color: aliceblue;
 }
 html,
 body {

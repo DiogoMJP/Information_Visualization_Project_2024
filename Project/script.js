@@ -276,6 +276,15 @@ function clickSeason(name) {
   updateScatterPlot(globalData);
 }
 
+function resetIndividualSelection() {
+  individualSelectedData = [];
+
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
 function clickCircle(event, d) {
   //if all points are selected, it means its the first selection so make that the only selected point
   if (individualSelectedData.some((anime) => anime.anime_id == d.anime_id)) {
