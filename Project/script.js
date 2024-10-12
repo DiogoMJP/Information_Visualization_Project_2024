@@ -6,6 +6,8 @@ var seasonSelectedData = [];
 var bin = null;
 var prev_bin = null;
 var season = null;
+var clicked_anime_id = null;
+var brushed_anime_id = null;
 var changedLayout = false;
 var selectionActive = false;
 var individualSelectionActive = false;
@@ -232,6 +234,22 @@ function createScatterPlot(data) {
     .text(`Slope: ${slope.toFixed(4)}`);
 }
 
+function calculateRegressionLine(data) {
+  const xValues = data.map(d => Math.log(d.members_count) / Math.log(10));
+  const yValues = data.map(d => d.score);
+
+  const xMean = d3.mean(xValues);
+  const yMean = d3.mean(yValues);
+
+  const ssxy = d3.sum(data.map((d, i) => (xValues[i] - xMean) * (yValues[i] - yMean)));
+  const ssxx = d3.sum(data.map((d, i) => Math.pow(xValues[i] - xMean, 2)));
+
+  const slope = ssxy / ssxx;
+  const intercept = yMean - (slope * xMean);
+
+  return { slope, intercept };
+}
+
 function createHistogram(data) {
   scoreData = data.map((obj) => obj["score"]);
 
@@ -325,17 +343,7 @@ function createHistogram(data) {
 // Interaction managers
 function clickAnime(id) {
   //if all points are selected, it means its the first selection so make that the only selected point
-  if (individualSelectedData.some((anime) => anime.anime_id == id)) {
-    individualSelectedData = individualSelectedData.filter(function (elem) {
-      return id != elem.anime_id;
-    });
-  } else {
-    individualSelectedData.push(  
-      selectedData.filter(function (elem) {
-        return id == elem.anime_id;
-      })[0]
-    );
-  }
+  clicked_anime_id = id;
 
   updateData();
   createAnimeList();
@@ -349,16 +357,6 @@ function clickSeason(name) {
   else season = name;
 
   // Update active button styles
-  updateSeasonButtons();
-
-  // Update data and visuals
-  updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
-  }
-
-function updateSeasonButtons() {
   document.querySelectorAll('.season_button').forEach(function (btn) {
     btn.classList.remove('active');
   });
@@ -366,7 +364,13 @@ function updateSeasonButtons() {
   if (season != null) {
     document.getElementById(season.toLowerCase() + '_button').classList.add('active');
   }
-}
+
+  // Update data and visuals
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+  }
 
 function resetIndividualSelection() {
   individualSelectedData = [];
@@ -381,15 +385,10 @@ function resetIndividualSelection() {
 }
 
 function clickCircle(event, d) {
-  if (!d || !d.anime_id) return;  // Exit if data is invalid
+  // idk 
+  //if (!d || !d.anime_id) return;  // Exit if data is invalid
 
-  if (individualSelectedData.some((anime) => anime.anime_id == d.anime_id)) {
-    individualSelectedData = individualSelectedData.filter(function (elem) {
-      return d.anime_id != elem.anime_id;
-    });
-  } else {
-    individualSelectedData.push(d);
-  }
+  clicked_anime_id = d.anime_id;
 
   updateData();
   createAnimeList();
@@ -428,6 +427,32 @@ function clickBin(event, d) {
 }
 
 function updateData() {
+  if (clicked_anime_id) {
+    if (individualSelectedData.some((anime) => anime.anime_id == clicked_anime_id)) {
+      individualSelectedData = individualSelectedData.filter(function (elem) {
+        return clicked_anime_id != elem.anime_id;
+      });
+    } else {
+      individualSelectedData.push(  
+        selectedData.filter(function (elem) {
+          return clicked_anime_id == elem.anime_id;
+        })[0]
+      );
+    }
+    clicked_anime_id = null;
+  }
+
+  if (brushed_anime_id) {
+    if (!individualSelectedData.some((anime) => anime.anime_id == brushed_anime_id)) {
+      individualSelectedData.push(  
+        selectedData.filter(function (elem) {
+          return brushed_anime_id == elem.anime_id;
+        })[0]
+      );
+    }
+    brushed_anime_id = null;
+  }
+
   if (bin != null) {
     selectedData = globalData.filter(function (elem) {
       return bin <= elem.score && bin + 0.5 > elem.score;
@@ -535,22 +560,6 @@ function mouseLeaveHistogram(event, d) {
     .attr("r", 3);
 }
 
-function calculateRegressionLine(data) {
-  const xValues = data.map(d => Math.log(d.members_count) / Math.log(10));
-  const yValues = data.map(d => d.score);
-
-  const xMean = d3.mean(xValues);
-  const yMean = d3.mean(yValues);
-
-  const ssxy = d3.sum(data.map((d, i) => (xValues[i] - xMean) * (yValues[i] - yMean)));
-  const ssxx = d3.sum(data.map((d, i) => Math.pow(xValues[i] - xMean, 2)));
-
-  const slope = ssxy / ssxx;
-  const intercept = yMean - (slope * xMean);
-
-  return { slope, intercept };
-}
-
 // Update functions
 function updateScatterPlot(data) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
@@ -565,7 +574,6 @@ function updateScatterPlot(data) {
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
     .range([margin + 50, svgWidth - margin]);
-
   yScale = d3
     .scaleLinear()
     .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
@@ -575,7 +583,7 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  // Update existing circles and add new ones
+  /* // Update existing circles and add new ones
   const circles = svg.select("g").selectAll("circle")
     .data(selectedData, d => d.anime_id);
 
@@ -615,20 +623,56 @@ function updateScatterPlot(data) {
       } else {
         return colorScale(d.season);
       }
+    }); */
+
+  circles = svg
+    .selectAll("circle")
+    .style("opacity", 1);
+    
+  svg
+    .selectAll("circle")
+    .transition()
+    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", (d) => yScale(d.score))
+    .duration(1000)
+    .end()
+    .then(() => {
+      svg
+        .selectAll("circle")
+        .filter((data, index) => !selectedData.includes(data))
+        .style("opacity", 0);
     });
+
+  if (individualSelectedData.length != 0) {
+    svg
+      .selectAll("circle")
+      .filter((data, _) => selectedData.includes(data))
+      .attr("fill", "gray");
+    svg
+      .selectAll("circle")
+      .filter((data) => individualSelectedData.includes(data))
+      .attr("fill", function (d) {
+        return colorScale(d.season);
+      });
+  } else {
+    svg
+      .selectAll("circle")
+      .filter((data, _) => selectedData.includes(data))
+      .attr("fill", function (d) {
+        return colorScale(d.season);
+      });
+  }
 
   // Update axes
   svg.select("g.yAxis")
       .transition()
       .duration(1000)
-      .ease(d3.easeLinear)
       .attr("transform", `translate(${margin},0)`)
       .call(d3.axisLeft(yScale));
 
   svg.select("g.xAxis")
       .transition()
       .duration(1000)
-      .ease(d3.easeLinear)
       .attr("transform", `translate(0,${svgHeight - margin})`)
       .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
     
