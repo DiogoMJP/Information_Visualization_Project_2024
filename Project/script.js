@@ -674,7 +674,7 @@ function updateHistogram(data) {
 
   const yScale = d3
     .scaleLinear()
-    .domain([0, individualSelectionActive ? //only scale y to individual selected if there are any
+    .domain([0, individualSelectionActive ? 
         d3.max(individualSelectedBins, function (d) {return d.length;}) : d3.max(bins, function (d) {return d.length;})])
     .range([svgHeight - margin, margin - 25]);
 
@@ -685,48 +685,43 @@ function updateHistogram(data) {
     .attr("height", svgHeight);
 
   svg
-    .selectAll("rect")
-    .data(data, (d) => d.title)
-    .exit()
-    .remove();
-
-  svg
     .select("g.yAxis")
     .transition()
-    .duration(1000)
+    .duration(750)
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
   
-  if (individualSelectionActive) { // there are individual selected
+  if (individualSelectionActive) {
     selectedBins = individualSelectedBins;
   }
-  else if (selectionActive) { // draw the global data in gray in the background
-    svg
-    .selectAll("rect.gray")
-    .attr("class", "gray")
-    .data(bins)
-    .enter()
-    .append("rect")
-    .attr("class", "gray")
-    .attr("x", function (d) {
-      return xScale(d.x0);
-    })
-    .attr("y", function (d) {
-      return yScale(d.length);
-    })
-    .attr("width", function (d) {
-      return xScale(d.x1) - xScale(d.x0);
-    })
-    .attr("height", function (d) {
-      return svgHeight - yScale(d.length) - margin;
-    })
-    .style("fill", "gray")
-    .style("stroke", "black")
-    .on("mouseover", mouseOverHistogram)
-    .on("mouseleave", mouseLeaveHistogram)
-    .on("click", clickBin);
+  else if (selectionActive) {
+    // Update gray background bars
+    const grayBars = svg.selectAll("rect.gray")
+      .data(bins);
+
+    grayBars.enter()
+      .append("rect")
+      .attr("class", "gray")
+      .attr("x", d => xScale(d.x0))
+      .attr("width", d => xScale(d.x1) - xScale(d.x0))
+      .attr("y", svgHeight - margin)
+      .attr("height", 0)
+      .style("fill", "gray")
+      .style("stroke", "black")
+      .merge(grayBars)
+      .transition()
+      .duration(750)
+      .attr("y", d => yScale(d.length))
+      .attr("height", d => svgHeight - yScale(d.length) - margin);
+
+    grayBars.exit()
+      .transition()
+      .duration(750)
+      .attr("y", svgHeight - margin)
+      .attr("height", 0)
+      .remove();
   }
-  else { // there is no selection
+  else {
     selectedBins = bins;
   }
 
@@ -734,33 +729,34 @@ function updateHistogram(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
   
-  svg
-    .selectAll("rect.selected")
-    .data(selectedBins)
-    .enter()
+  // Update colored (selected) bars
+  const coloredBars = svg.selectAll("rect.selected")
+    .data(selectedBins);
+
+  coloredBars.enter()
     .append("rect")
     .attr("class", "selected")
-    .attr("x", function (d) {
-      return xScale(d.x0);
-    })
-    .attr("y", function (d) {
-      return yScale(d.length);
-    })
-    .attr("width", function (d) {
-      return xScale(d.x1) - xScale(d.x0);
-    })
-    .attr("height", function (d) {
-      return svgHeight - yScale(d.length) - margin;
-    })
-    .style("position", "relative")
-    .style("fill", function (d) { //if season filter is one paint the bars
-      return season == null ? "steelblue" : colorScale(season);
-    })
-    .style("stroke", "black")
+    .attr("x", d => xScale(d.x0))
+    .attr("width", d => xScale(d.x1) - xScale(d.x0))
+    .attr("y", svgHeight - margin)
+    .attr("height", 0)
+    .merge(coloredBars)
     .on("mouseover", mouseOverHistogram)
     .on("mouseleave", mouseLeaveHistogram)
     .on("click", clickBin)
-    .append("title");
+    .transition()
+    .duration(750)
+    .attr("y", d => yScale(d.length))
+    .attr("height", d => svgHeight - yScale(d.length) - margin)
+    .style("fill", season == null ? "steelblue" : colorScale(season))
+    .style("stroke", "black");
+
+  coloredBars.exit()
+    .transition()
+    .duration(750)
+    .attr("y", svgHeight - margin)
+    .attr("height", 0)
+    .remove();
 }
 
 function zoomed(event) {
