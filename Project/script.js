@@ -615,6 +615,7 @@ function updateScatterPlot(data) {
   svg
     .selectAll("circle")
     .filter((d) => season == null || season == d.season)
+    .style("pointer-events", "auto")
     .style("opacity", 1);
     
   svg
