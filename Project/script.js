@@ -400,8 +400,8 @@ function brushCircle(d) {
 function clickBin(event, d) {
   // select a bin if none was selected; else, select none
   prev_bin = bin;
-  if (bin == d.x0)
-    bin = bin != null ? bin = null : bin = d.x0;
+  if (bin == d.x0) 
+    bin = bin != null ? null : d.x0;
   else
     bin = d.x0
 
@@ -474,7 +474,6 @@ function mouseOverScatterPlot(event, d) {
   let left = event.pageX + 10;
 
   if (left + tooltipWidth > window.innerWidth) {
-    console.log(tooltipWidth);
     left = event.pageX - tooltipWidth - 30; //position to the left of the mouse if there's not enough space to the right
   }
 
@@ -561,9 +560,9 @@ function updateScatterPlot(data) {
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
   // Update existing circles and add new ones
-  const circles = svg.selectAll("circle")
+  const circles = svg.select("g").selectAll("circle")
     .data(selectedData, d => d.anime_id);
-  
+
   // Enter selection
   circles.enter()
     .append("circle")
