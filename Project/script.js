@@ -474,55 +474,63 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  // Remove circles that are no longer in the data
-  svg.selectAll("circle")
-    .filter(d => !selectedData.some(sd => sd.anime_id === d.anime_id))
-    .remove();
-  
   // Update existing circles and add new ones
   const circles = svg.selectAll("circle")
     .data(selectedData, d => d.anime_id);
   
+  // Enter selection
   circles.enter()
     .append("circle")
     .attr("r", 3)
-    .merge(circles)
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
+    .style("opacity", 0)
+    .merge(circles)
+    .transition()
+    .duration(500)
+    .ease(d3.easeLinear)
+    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", (d) => yScale(d.score)) // Use score directly
     .style("opacity", 1)
     .style("stroke", "grey")
-    .style("stroke-width", 1)
+    .style("stroke-width", 1);
+
+  // Exit selection
+  circles.exit()
+    .transition()
+    .duration(500)
+    .ease(d3.easeLinear)
+    .style("opacity", 0)
+    .remove();
+
+  // Reapply event listeners and set colors
+  svg.selectAll("circle")
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
-    .on("click", clickCircle);
-
-  circles.exit().remove();
+    .on("click", clickCircle)
+    .attr("fill", (d) => {
+      if (individualSelectedData.length != 0) {
+        return individualSelectedData.some(sd => sd.anime_id === d.anime_id) ? colorScale(d.season) : "gray";
+      } else {
+        return colorScale(d.season);
+      }
+    });
 
   // Update axes
-  svg.select("g.xAxis")
-    .transition()
-    .duration(1000)
-    .attr("transform", `translate(0,${svgHeight - margin})`)
-    .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
-
   svg.select("g.yAxis")
-    .transition()
-    .duration(1000)
-    .attr("transform", `translate(${margin},0)`)
-    .call(d3.axisLeft(yScale));
+      .transition()
+      .duration(1000)
+      .ease(d3.easeLinear)
+      .attr("transform", `translate(${margin},0)`)
+      .call(d3.axisLeft(yScale));
 
-  // Update colors based on selection
-  if (individualSelectedData.length != 0) {
-    svg.selectAll("circle")
-      .attr("fill", "gray");
-    svg.selectAll("circle")
-      .filter((data) => individualSelectedData.includes(data))
-      .attr("fill", (d) => colorScale(d.season));
-  } else {
-    svg.selectAll("circle")
-      .attr("fill", (d) => colorScale(d.season));
-  }
-
+  svg.select("g.xAxis")
+      .transition()
+      .duration(1000)
+      .ease(d3.easeLinear)
+      .attr("transform", `translate(0,${svgHeight - margin})`)
+      .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
+    
   // Update regression line
   const { slope, intercept } = calculateRegressionLine(selectedData);
 
