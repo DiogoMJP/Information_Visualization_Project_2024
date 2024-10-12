@@ -88,7 +88,10 @@ function createAnimeList() {
   }
 }
 
+
 // Create visual idioms
+
+// Create the line showing a jump in values on the graph
 function drawSkip(is_horiz, start_x, start_y) {
   const data = (sx, sy) => {return [{x: sx + 0, y: sy + 0}, {x: sx + 13, y: sy + 0}, {x: sx + 15, y: sy + 5}, {x: sx + 19, y: sy - 5}, {x: sx + 23, y: sy + 5},
     {x: sx + 27, y: sy - 5}, {x: sx + 31, y: sy + 5}, {x: sx + 35, y: sy - 5}, {x: sx + 37, y: sy + 0}, {x: sx + 50, y: sy + 0}]};
@@ -103,18 +106,25 @@ function drawSkip(is_horiz, start_x, start_y) {
   else {return vertLineFunc(data(start_y, start_x));}
 }
 
+// Create the scatter plot
 function createScatterPlot(data) {
+  // Set constants for this graph
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
   const margin = 50;
 
-  zoomBehavior = d3.zoom().scaleExtent([0.7, 20])
-  .extent([[0, 0], [svgWidth, svgHeight]])
-  .filter(function(event) {
-    return event.type === 'wheel';
-  })
-  .on("zoom", zoomed)
+  // Create the behavior for the zoom
+  zoomBehavior = d3
+    .zoom()
+    .scaleExtent([1, 20])
+    .extent([[0, 0], [svgWidth, svgHeight]]) 
+    .translateExtent([[0, 0], [svgWidth, svgHeight]])
+    .filter(function(event) {
+      return event.type === 'wheel';
+    })
+    .on("zoom", zoomed)
 
+  // Set the scales used (colors and axis)
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
@@ -126,6 +136,8 @@ function createScatterPlot(data) {
     .scaleLinear()
     .domain([9.5, 3])
     .range([margin, svgHeight - margin - 50]);
+
+  // Create the svg for the graph
   const svg = d3
     .select("#ScatterPlot")
     .append("svg")
@@ -133,18 +145,19 @@ function createScatterPlot(data) {
     .attr("height", svgHeight)
     .call(zoomBehavior)
     
-    svg.append("defs")
+  // Create zone where the circles are rendered 
+  svg.append("defs")
     .append("clipPath")
-    .attr("id", "clip")
+    .attr("id", "scatterPlotClip")
     .append("rect")
     .attr("x", margin)
     .attr("y", margin)
     .attr("width", svgWidth - margin * 2 + 10)
     .attr("height", svgHeight - margin * 2);
-
   const chartArea = svg.append("g")
-    .attr("clip-path", "url(#clip)");
+    .attr("clip-path", "url(#scatterPlotClip)");
 
+  // Create the circles
   chartArea
     .selectAll("circle")
     .data(selectedData, (d) => d.title)
@@ -160,6 +173,7 @@ function createScatterPlot(data) {
     .on("mouseleave", mouseLeaveScatterPlot)
     .on("click", clickCircle);
 
+  // Draw the axis and associated things
   svg
     .append("g")
     .attr("class", "xAxis")
