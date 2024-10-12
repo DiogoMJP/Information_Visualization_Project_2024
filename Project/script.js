@@ -333,7 +333,6 @@ function clickSeason(name) {
 
   // Update active button styles
   updateSeasonButtons();
-  individualSelectedData = [];
 
   // Update data and visuals
   updateData();
