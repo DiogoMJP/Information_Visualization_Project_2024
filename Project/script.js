@@ -110,6 +110,9 @@ function createScatterPlot(data) {
 
   zoomBehavior = d3.zoom().scaleExtent([0.7, 20])
   .extent([[0, 0], [svgWidth, svgHeight]])
+  .filter(function(event) {
+    return event.type === 'wheel';
+  })
   .on("zoom", zoomed)
 
   const colorScale = d3.scaleOrdinal()
