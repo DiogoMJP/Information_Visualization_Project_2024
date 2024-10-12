@@ -467,9 +467,21 @@ function mouseOverScatterPlot(event, d) {
         <strong>Score:</strong> ${d.score}<br>
         <strong>Members:</strong> ${d.members_count}`
     )
-    .style("top", `${event.pageY - 30}px`)
-    .style("left", `${event.pageX + 10}px`);
-  
+
+  const tooltipWidth = parseInt(scatterPlotTooltip.style("width"), 10);
+  const tooltipHeight = parseInt(scatterPlotTooltip.style("height"), 10);
+  let top = event.pageY - tooltipHeight - 10;
+  let left = event.pageX + 10;
+
+  if (left + tooltipWidth > window.innerWidth) {
+    console.log(tooltipWidth);
+    left = event.pageX - tooltipWidth - 30; //position to the left of the mouse if there's not enough space to the right
+  }
+
+  scatterPlotTooltip
+    .style("top", `${top}px`)
+    .style("left", `${left}px`);
+
   if (mouse_down)
     brushCircle(d);
 }
