@@ -1,11 +1,14 @@
 var globalData;
 var selectedData = [];
 var individualSelectedData = [];
+var seasonSelectedData = [];
 
 var bin = null;
 var prev_bin = null;
 var season = null;
 var changedLayout = false;
+var selectionActive = false;
+var individualSelectionActive = false;
 
 mouse_down = false
 
@@ -343,17 +346,31 @@ function updateData() {
     individualSelectedData = individualSelectedData.filter(function (elem) {
       return bin <= elem.score && bin + 0.5 > elem.score;
     });
+    selectionActive = true;
+    binSelectionActive = true;
   } else {
     selectedData = globalData;
+    selectionActive = false;
   }
   
   if (season != null) {
+    seasonSelectedData = globalData.filter(function (elem) {
+      return elem.season == season;
+    });
     selectedData = selectedData.filter(function (elem) {
       return elem.season == season;
     });
     individualSelectedData = individualSelectedData.filter(function (elem) {
       return elem.season == season;
     });
+    selectionActive = true;
+  }
+
+  if (individualSelectedData.length == 0) {
+    individualSelectionActive = false;
+  }
+  else {
+    individualSelectionActive = true;
   }
 
   if (prev_bin != bin)
@@ -430,7 +447,7 @@ function updateScatterPlot(data) {
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
-  if (individualSelectedData.length != 0) {
+  if (individualSelectionActive) {
     svg
       .selectAll("circle")
       .filter((data, _) => selectedData.includes(data))
@@ -455,6 +472,7 @@ function updateScatterPlot(data) {
 function updateHistogram(data) {
   scoreData = data.map((obj) => obj["score"]);
   selectedScoreData = selectedData.map((obj) => obj["score"]);
+  individualSelectedScoreData = individualSelectedData.map((obj) => obj["score"]);
 
   const svgWidth = d3.select("#Histogram").node().clientWidth;
   const svgHeight = d3.select("#Histogram").node().clientHeight;
@@ -465,13 +483,15 @@ function updateHistogram(data) {
     .domain([3, 9.5])
     .range([margin + 50, svgWidth - margin]);
   
-  const histogram = d3.histogram().domain(xScale.domain()).thresholds(xScale.ticks(14));
-  const bins = histogram(scoreData);
-  const selectedBins = histogram(selectedScoreData);
+  histogram = d3.histogram().domain(xScale.domain()).thresholds(xScale.ticks(14));
+  bins = histogram(scoreData);
+  selectedBins = histogram(selectedScoreData);
+  individualSelectedBins = histogram(individualSelectedScoreData);
 
   const yScale = d3
     .scaleLinear()
-    .domain([0, d3.max(bins, function (d) {return d.length;})])
+    .domain([0, individualSelectionActive ? //only scale y to individual selected if there are any
+        d3.max(individualSelectedBins, function (d) {return d.length;}) : d3.max(bins, function (d) {return d.length;})])
     .range([svgHeight - margin, margin]);
 
   const svg = d3
@@ -486,6 +506,17 @@ function updateHistogram(data) {
     .exit()
     .remove();
   svg
+    .select("g.yAxis")
+    .transition()
+    .duration(1000)
+    .attr("transform", `translate(${margin},0)`)
+    .call(d3.axisLeft(yScale));
+  
+  if (individualSelectionActive) { // there are individual selected
+    selectedBins = individualSelectedBins;
+  }
+  else if (selectionActive) { // draw the global data in gray in the background
+    svg
     .selectAll("rect.gray")
     .attr("class", "gray")
     .data(bins)
@@ -517,6 +548,15 @@ function updateHistogram(data) {
     .text(function (d) {
       return d.length;
     });
+  }
+  else { // there is no selection
+    selectedBins = bins;
+  }
+
+  const colorScale = d3.scaleOrdinal()
+    .domain(["Spring", "Summer", "Fall", "Winter"])
+    .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
+  
   svg
     .selectAll("rect.selected")
     .data(selectedBins)
@@ -536,19 +576,10 @@ function updateHistogram(data) {
       return svgHeight - yScale(d.length) - margin;
     })
     .style("position", "relative")
-    .style("fill", "steelblue")
-    .style("stroke", function (d) {
-      res = "black";
-      if (individualSelectedData.length != selectedData.length) {
-        individualSelectedData.forEach((elem) => {
-          if (elem.score >= d.x0 && elem.score < d.x0 + 0.5) {
-            d3.select(this).raise();
-            res = "red";
-          }
-        });
-      }
-      return res;
+    .style("fill", function (d) { //if season filter is one paint the bars
+      return season == null ? "steelblue" : colorScale(season);
     })
+    .style("stroke", "black")
     .on("mouseover", function (event, d) {
       d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
     })
