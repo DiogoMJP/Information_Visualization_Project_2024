@@ -13,10 +13,6 @@ var xScale;
 var yScale;
 var zoomBehavior;
 
-let brush;
-let idleTimeout;
-let idleDelay = 350;
-
 mouse_down = false
 
 const histogramTooltip = d3
@@ -156,7 +152,7 @@ function createScatterPlot(data) {
     .attr("x", margin)
     .attr("y", margin)
     .attr("width", svgWidth - margin * 2 + 10)
-    .attr("height", svgHeight - margin * 2 - 50);
+    .attr("height", svgHeight - margin * 2);
   const chartArea = svg.append("g")
     .attr("clip-path", "url(#scatterPlotClip)");
 
@@ -233,14 +229,6 @@ function createScatterPlot(data) {
     .attr("font-size", "12px")
     .attr("fill", "steelblue")
     .text(`Slope: ${slope.toFixed(4)}`);
-
-  brush = d3.brush()
-    .extent([[margin + 50, margin], [svgWidth - margin, svgHeight - margin - 50]])
-    .on("end", brushended);
-
-  chartArea.append("g")
-    .attr("class", "brush")
-    .call(brush);
 }
 
 function createHistogram(data) {
@@ -660,7 +648,6 @@ function updateScatterPlot(data) {
     .attr("x", margin + 60)
     .attr("y", margin + 20)
     .text(`Slope: ${slope.toFixed(4)}`);
-
 }
 
 function updateHistogram(data) {
@@ -766,47 +753,32 @@ function updateHistogram(data) {
     .style("stroke", "black");
 }
 
-function brushended(event) {
-  const extent = event.selection;
-  if (!extent) {
-    if (!idleTimeout) return idleTimeout = setTimeout(idled, idleDelay);
-    xScale.domain([2.5, d3.max(globalData, d => Math.log(d.members_count) / Math.log(10))]);
-    yScale.domain([9.5, 3]);
-  } else {
-    xScale.domain([extent[0][0], extent[1][0]].map(xScale.invert));
-    yScale.domain([extent[1][1], extent[0][1]].map(yScale.invert));
-    svg.select(".brush").call(brush.move, null);
-  }
-  zoom();
-  individualSelectedData = [];
-}
+function zoomed(event) {
+  const xAxis = d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2"));
+  const yAxis = d3.axisLeft(yScale);
 
-function idled() {
-  idleTimeout = null;
-}
+  const new_xScale = event.transform.rescaleX(xScale);
+  const new_yScale = event.transform.rescaleY(yScale);
 
-function zoom() {
-  const transition = svg.transition().duration(750);
+  const svg = d3.select("#ScatterPlot").select("svg");
 
-  svg.select(".xAxis").transition(transition)
-    .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
-  svg.select(".yAxis").transition(transition)
-    .call(d3.axisLeft(yScale));
+  //update axes
+  svg.select(".xAxis").call(xAxis.scale(new_xScale));
+  svg.select(".yAxis").call(yAxis.scale(new_yScale));
 
-  svg.selectAll("circle").transition(transition)
-    .attr("cx", d => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", d => yScale(d.score));
+  //update circles
+  svg.selectAll("circle").data(selectedData, d => d.anime_id)
+    .attr("cx", d => new_xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", d => new_yScale(d.score));
 
   const { slope, intercept } = calculateRegressionLine(selectedData);
-  svg.select(".regression-line").transition(transition)
-    .attr("x1", xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
-    .attr("y1", yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
-    .attr("x2", xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
-    .attr("y2", yScale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept));
 
-  updateData();
-  createAnimeList();
-  updateHistogram(globalData);
+  //update regression line
+  svg.select(".regression-line")
+    .attr("x1", new_xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y1", new_yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+    .attr("x2", new_xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y2", new_yScale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept));
 }
 
 document.body.onmousedown = function(evt) {
