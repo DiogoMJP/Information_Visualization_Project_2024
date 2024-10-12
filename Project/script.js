@@ -110,6 +110,7 @@ function createScatterPlot(data) {
     .on("click", clickCircle)
     .append("title")
     .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
+
   svg
     .append("g")
     .attr("class", "xAxis")
@@ -144,6 +145,28 @@ function createScatterPlot(data) {
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Score");
+
+  // Add regression line
+  const { slope, intercept } = calculateRegressionLine(data);
+
+  svg.append("line")
+    .attr("class", "regression-line")
+    .attr("x1", xScale(d3.min(data, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y1", yScale(slope * d3.min(data, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+    .attr("x2", xScale(d3.max(data, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y2", yScale(slope * d3.max(data, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+    .attr("stroke", "steelblue")
+    .attr("stroke-width", 2);
+
+  // Add slope label
+  svg.append("text")
+    .attr("class", "slope-label")
+    .attr("x", margin + 60)
+    .attr("y", margin + 20)
+    .attr("text-anchor", "start")
+    .attr("font-size", "12px")
+    .attr("fill", "steelblue")
+    .text(`Slope: ${slope.toFixed(4)}`);
 }
 
 function createHistogram(data) {
@@ -395,6 +418,22 @@ function mouseLeaveFunction(event, d) {
     .attr("r", 3);
 }
 
+function calculateRegressionLine(data) {
+  const xValues = data.map(d => Math.log(d.members_count) / Math.log(10));
+  const yValues = data.map(d => d.score);
+
+  const xMean = d3.mean(xValues);
+  const yMean = d3.mean(yValues);
+
+  const ssxy = d3.sum(data.map((d, i) => (xValues[i] - xMean) * (yValues[i] - yMean)));
+  const ssxx = d3.sum(data.map((d, i) => Math.pow(xValues[i] - xMean, 2)));
+
+  const slope = ssxy / ssxx;
+  const intercept = yMean - (slope * xMean);
+
+  return { slope, intercept };
+}
+
 // Update functions
 function updateScatterPlot(data) {
   const svgWidth = document.getElementById('ScatterPlot').offsetWidth;
@@ -434,8 +473,8 @@ function updateScatterPlot(data) {
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
     .style("opacity", 1)
-    .style("stroke", "grey")  // Add stroke
-    .style("stroke-width", 1)  // Add stroke width
+    .style("stroke", "grey")
+    .style("stroke-width", 1)
     .on("mouseover", mouseOverFunction)
     .on("mouseleave", mouseLeaveFunction)
     .on("click", clickCircle);
@@ -466,6 +505,26 @@ function updateScatterPlot(data) {
     svg.selectAll("circle")
       .attr("fill", (d) => colorScale(d.season));
   }
+
+  // Update regression line
+  const { slope, intercept } = calculateRegressionLine(selectedData);
+
+  svg.select(".regression-line")
+    .transition()
+    .duration(1000)
+    .attr("x1", xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y1", yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+    .attr("x2", xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y2", yScale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+    .attr("stroke", "steelblue");
+
+  // Update slope label
+  svg.select(".slope-label")
+    .transition()
+    .duration(1000)
+    .attr("x", margin + 60)
+    .attr("y", margin + 20)
+    .text(`Slope: ${slope.toFixed(4)}`);
 }
 
 function updateHistogram(data) {
