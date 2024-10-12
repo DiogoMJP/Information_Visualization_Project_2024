@@ -1,6 +1,7 @@
 var globalData;
 var selectedData = [];
 var individualSelectedData = [];
+var seasonSelectedData = [];
 
 var bin = null;
 var prev_bin = null;
@@ -281,7 +282,6 @@ function createHistogram(data) {
     .data(bins)
     .enter()
     .append("rect")
-    .attr("class", "selected")
     .attr("x", function (d) {
       return xScale(d.x0);
     })
@@ -468,6 +468,9 @@ function updateData() {
   }
   
   if (season != null) {
+    seasonSelectedData = globalData.filter(function (elem) {
+      return elem.season == season;
+    });
     selectedData = selectedData.filter(function (elem) {
       return elem.season == season;
     });
@@ -622,8 +625,9 @@ function updateScatterPlot(data) {
       }
     }); */
 
-  circles = svg
+  svg
     .selectAll("circle")
+    .filter((d) => season == null || season == d.season)
     .style("opacity", 1);
     
   svg
@@ -631,7 +635,7 @@ function updateScatterPlot(data) {
     .transition()
     .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
     .attr("cy", (d) => yScale(d.score))
-    .duration(1000)
+    .duration(500)
     .end()
     .then(() => {
       svg
@@ -663,13 +667,13 @@ function updateScatterPlot(data) {
   // Update axes
   svg.select("g.yAxis")
       .transition()
-      .duration(1000)
+      .duration(500)
       .attr("transform", `translate(${margin},0)`)
       .call(d3.axisLeft(yScale));
 
   svg.select("g.xAxis")
       .transition()
-      .duration(1000)
+      .duration(500)
       .attr("transform", `translate(0,${svgHeight - margin})`)
       .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
     
@@ -678,7 +682,7 @@ function updateScatterPlot(data) {
 
   svg.select(".regression-line")
     .transition()
-    .duration(1000)
+    .duration(500)
     .attr("x1", xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
     .attr("y1", yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
     .attr("x2", xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
@@ -688,7 +692,7 @@ function updateScatterPlot(data) {
   // Update slope label
   svg.select(".slope-label")
     .transition()
-    .duration(1000)
+    .duration(500)
     .attr("x", margin + 60)
     .attr("y", margin + 20)
     .text(`Slope: ${slope.toFixed(4)}`);
@@ -731,38 +735,39 @@ function updateHistogram(data) {
     .duration(750)
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
-
-    svg.selectAll("rect.selected")
-    .transition()
-    .duration(750)
-    .attr("y", svgHeight - margin)
-    .attr("height", 0)
-    .remove();
   
   if (individualSelectionActive) {
     selectedBins = individualSelectedBins;
-    svg.selectAll("rect.gray")
-    .transition()
-    .duration(750)
-    .attr("y", svgHeight - margin)
-    .attr("height", 0)
-    .remove();
   }
   else if (selectionActive) {
     // Update gray background bars
-    const grayBars = svg.selectAll("rect.gray").data(bins, d => d.x0);
+    const grayBars = svg.selectAll("rect.gray")
+      .data(bins);
 
     grayBars.enter()
       .append("rect")
       .attr("class", "gray")
       .attr("x", d => xScale(d.x0))
       .attr("width", d => xScale(d.x1) - xScale(d.x0))
-      .attr("y", d => yScale(d.length))
-      .attr("height", d => svgHeight - yScale(d.length) - margin)
+      .attr("y", svgHeight - margin)
+      .attr("height", 0)
+      .on("mouseover", mouseOverHistogram)
+      .on("mouseleave", mouseLeaveHistogram)
+      .on("click", clickBin)
       .style("fill", "gray")
       .style("stroke", "black")
-      .selection()
-      .lower();
+      .merge(grayBars)
+      .transition()
+      .duration(750)
+      .attr("y", d => yScale(d.length))
+      .attr("height", d => svgHeight - yScale(d.length) - margin);
+
+    grayBars.exit()
+      .transition()
+      .duration(750)
+      .attr("y", svgHeight - margin)
+      .attr("height", 0)
+      .remove();
   }
   else {
     selectedBins = bins;
@@ -773,7 +778,8 @@ function updateHistogram(data) {
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
   
   // Update colored (selected) bars
-  const coloredBars = svg.selectAll("rect.selected").data(selectedBins, d => d.x0);
+  const coloredBars = svg.selectAll("rect.selected")
+    .data(selectedBins);
 
   coloredBars.enter()
     .append("rect")
@@ -792,6 +798,13 @@ function updateHistogram(data) {
     .attr("height", d => svgHeight - yScale(d.length) - margin)
     .style("fill", season == null ? "steelblue" : colorScale(season))
     .style("stroke", "black");
+
+  coloredBars.exit()
+    .transition()
+    .duration(750)
+    .attr("y", svgHeight - margin)
+    .attr("height", 0)
+    .remove();
 }
 
 function zoomed(event) {
