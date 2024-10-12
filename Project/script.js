@@ -134,9 +134,7 @@ function createScatterPlot(data) {
     .style("stroke-width", 1)
     .on("mouseover", mouseOverScatterPlot)
     .on("mouseleave", mouseLeaveScatterPlot)
-    .on("click", clickCircle)
-    .append("title")
-    .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
+    .on("click", clickCircle);
 
   svg
     .append("g")
@@ -244,11 +242,7 @@ function createHistogram(data) {
     .style("stroke", "black")
     .on("mouseover", mouseOverHistogram)
     .on("mouseleave", mouseLeaveHistogram)
-    .on("click", clickBin)
-    .append("title")
-    .text(function (d) {
-      return d.length;
-    });
+    .on("click", clickBin);
 
   svg
     .append("g")
@@ -684,11 +678,7 @@ function updateHistogram(data) {
     .style("stroke", "black")
     .on("mouseover", mouseOverHistogram)
     .on("mouseleave", mouseLeaveHistogram)
-    .on("click", clickBin)
-    .append("title")
-    .text(function (d) {
-      return d.length;
-    });
+    .on("click", clickBin);
   }
   else { // there is no selection
     selectedBins = bins;
@@ -724,10 +714,7 @@ function updateHistogram(data) {
     .on("mouseover", mouseOverHistogram)
     .on("mouseleave", mouseLeaveHistogram)
     .on("click", clickBin)
-    .append("title")
-    .text(function (d) {
-      return d.length;
-    });
+    .append("title");
 }
 
 
