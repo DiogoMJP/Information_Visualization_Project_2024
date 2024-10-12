@@ -153,7 +153,7 @@ function createScatterPlot(data) {
     .attr("x", margin)
     .attr("y", margin)
     .attr("width", svgWidth - margin * 2 + 10)
-    .attr("height", svgHeight - margin * 2);
+    .attr("height", svgHeight - margin * 2 - 50);
   const chartArea = svg.append("g")
     .attr("clip-path", "url(#scatterPlotClip)");
 
