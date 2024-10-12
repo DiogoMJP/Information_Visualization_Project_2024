@@ -398,11 +398,7 @@ function clickCircle(event, d) {
 function brushCircle(d) {
   //if all points are selected, it means its the first selection so make that the only selected point
   if (!individualSelectedData.some((anime) => anime.anime_id == d.anime_id)) {
-    individualSelectedData.push(  
-      selectedData.filter(function (elem) {
-        return d.anime_id == elem.anime_id;
-      })[0]
-    );
+    brushed_anime_id = d.anime_id;
   }
 
   updateData();
@@ -632,6 +628,7 @@ function updateScatterPlot(data) {
       svg
         .selectAll("circle")
         .filter((data, index) => !selectedData.includes(data))
+        .style("pointer-events", "none")
         .style("opacity", 0);
     });
 
