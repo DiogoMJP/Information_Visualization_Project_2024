@@ -1,7 +1,6 @@
 var globalData;
 var selectedData = [];
 var individualSelectedData = [];
-var seasonSelectedData = [];
 
 var bin = null;
 var prev_bin = null;
@@ -282,6 +281,7 @@ function createHistogram(data) {
     .data(bins)
     .enter()
     .append("rect")
+    .attr("class", "selected")
     .attr("x", function (d) {
       return xScale(d.x0);
     })
@@ -468,9 +468,6 @@ function updateData() {
   }
   
   if (season != null) {
-    seasonSelectedData = globalData.filter(function (elem) {
-      return elem.season == season;
-    });
     selectedData = selectedData.filter(function (elem) {
       return elem.season == season;
     });
@@ -734,36 +731,38 @@ function updateHistogram(data) {
     .duration(750)
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale));
+
+    svg.selectAll("rect.selected")
+    .transition()
+    .duration(750)
+    .attr("y", svgHeight - margin)
+    .attr("height", 0)
+    .remove();
   
   if (individualSelectionActive) {
     selectedBins = individualSelectedBins;
+    svg.selectAll("rect.gray")
+    .transition()
+    .duration(750)
+    .attr("y", svgHeight - margin)
+    .attr("height", 0)
+    .remove();
   }
   else if (selectionActive) {
     // Update gray background bars
-    const grayBars = svg.selectAll("rect.gray")
-      .data(bins);
+    const grayBars = svg.selectAll("rect.gray").data(bins, d => d.x0);
 
     grayBars.enter()
       .append("rect")
       .attr("class", "gray")
       .attr("x", d => xScale(d.x0))
       .attr("width", d => xScale(d.x1) - xScale(d.x0))
-      .attr("y", svgHeight - margin)
-      .attr("height", 0)
+      .attr("y", d => yScale(d.length))
+      .attr("height", d => svgHeight - yScale(d.length) - margin)
       .style("fill", "gray")
       .style("stroke", "black")
-      .merge(grayBars)
-      .transition()
-      .duration(750)
-      .attr("y", d => yScale(d.length))
-      .attr("height", d => svgHeight - yScale(d.length) - margin);
-
-    grayBars.exit()
-      .transition()
-      .duration(750)
-      .attr("y", svgHeight - margin)
-      .attr("height", 0)
-      .remove();
+      .selection()
+      .lower();
   }
   else {
     selectedBins = bins;
@@ -774,8 +773,7 @@ function updateHistogram(data) {
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
   
   // Update colored (selected) bars
-  const coloredBars = svg.selectAll("rect.selected")
-    .data(selectedBins);
+  const coloredBars = svg.selectAll("rect.selected").data(selectedBins, d => d.x0);
 
   coloredBars.enter()
     .append("rect")
@@ -794,13 +792,6 @@ function updateHistogram(data) {
     .attr("height", d => svgHeight - yScale(d.length) - margin)
     .style("fill", season == null ? "steelblue" : colorScale(season))
     .style("stroke", "black");
-
-  coloredBars.exit()
-    .transition()
-    .duration(750)
-    .attr("y", svgHeight - margin)
-    .attr("height", 0)
-    .remove();
 }
 
 function zoomed(event) {
