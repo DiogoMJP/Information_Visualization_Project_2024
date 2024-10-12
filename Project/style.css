@@ -135,10 +135,24 @@
   background-color: white;
   color: darkorchid;
 }
+#winter_button.active {
+  border-style: solid;
+  border-width: 2px;
+  border-color: darkorchid;
+  background-color: white;
+  color: darkorchid;
+}
 #spring_button {
   background-color: limegreen;
 }
 #spring_button:hover {
+  border-style: solid;
+  border-width: 2px;
+  border-color: limegreen;
+  background-color: white;
+  color: limegreen;
+}
+#spring_button.active {
   border-style: solid;
   border-width: 2px;
   border-color: limegreen;
@@ -155,10 +169,24 @@
   background-color: white;
   color: gold;
 }
+#summer_button.active {
+  border-style: solid;
+  border-width: 2px;
+  border-color: gold;
+  background-color: white;
+  color: gold;
+}
 #fall_button {
   background-color: darkorange;
 }
 #fall_button:hover {
+  border-style: solid;
+  border-width: 2px;
+  border-color: darkorange;
+  background-color: white;
+  color: darkorange;
+}
+#fall_button.active {
   border-style: solid;
   border-width: 2px;
   border-color: darkorange;
@@ -226,11 +254,25 @@
   position: fixed;
   background-color: aliceblue;
 }
+.tooltip {
+  position: absolute;
+  text-align: left;
+  padding: 8px;
+  font-size: 14px;
+  background: white;
+  border: 1px solid lightgray;
+  border-radius: 4px;
+  pointer-events: none;
+  color: steelblue;
+  box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
 html,
 body {
   height: 100%;
   margin: 0;
   font-family: Arial, sans-serif;
+  background-color: rgb(240, 240, 240);
 }
 
 button {
