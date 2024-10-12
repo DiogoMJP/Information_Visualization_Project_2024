@@ -6,7 +6,6 @@
   grid-template-columns: 16% 42% 42%;
   grid-template-rows: 20% 50% 30%;
   gap: 10px;
-  background-color: white;
 }
 .graph_container {
   width: flex;
@@ -15,9 +14,10 @@
   border-style: solid;
   border-width: 2px;
   border-color: lightgrey;
+  background-color: rgba(255, 255, 255, 0.8);
 }
 #FilterContainer {
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: rgba(241, 249, 255, 0.8);
   grid-row: 1 / span 3;
   border-style: none solid none none;
   border-width: 3px;
@@ -271,8 +271,8 @@ html,
 body {
   height: 100%;
   margin: 0;
-  font-family: Arial, sans-serif;
-  background-color: rgb(240, 240, 240);
+  font-family: cursive, Arial, sans-serifs;
+  background-color: rgb(204, 219, 251);
 }
 
 button {
