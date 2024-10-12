@@ -567,7 +567,7 @@ function updateHistogram(data) {
     .scaleLinear()
     .domain([0, individualSelectionActive ? //only scale y to individual selected if there are any
         d3.max(individualSelectedBins, function (d) {return d.length;}) : d3.max(bins, function (d) {return d.length;})])
-    .range([svgHeight - margin, margin]);
+    .range([svgHeight - margin, margin - 25]);
 
   const svg = d3
     .select("#Histogram")
