@@ -10,6 +10,10 @@ var changedLayout = false;
 var selectionActive = false;
 var individualSelectionActive = false;
 
+var xScale;
+var yScale;
+var zoomBehavior;
+
 mouse_down = false
 
 const histogramTooltip = d3
@@ -24,17 +28,17 @@ const histogramTooltip = d3
     .style("text-align", "left")
     .style("color", "steelblue");
 
-  const scatterPlotTooltip = d3
-    .select("#ScatterPlot")
-    .append("div")
-    .style("position", "absolute")
-    .style("background", "#fff")
-    .style("padding", "5px 10px")
-    .style("border", "1px solid #ccc")
-    .style("border-radius", "5px")
-    .style("visibility", "hidden")
-    .style("text-align", "left")
-    .style("color", "steelblue");
+const scatterPlotTooltip = d3
+  .select("#ScatterPlot")
+  .append("div")
+  .style("position", "absolute")
+  .style("background", "#fff")
+  .style("padding", "5px 10px")
+  .style("border", "1px solid #ccc")
+  .style("border-radius", "5px")
+  .style("visibility", "hidden")
+  .style("text-align", "left")
+  .style("color", "steelblue");
 
 
 // Initialization of the dashboard
@@ -104,14 +108,18 @@ function createScatterPlot(data) {
   const svgHeight = document.getElementById('ScatterPlot').offsetHeight;
   const margin = 50;
 
+  zoomBehavior = d3.zoom().scaleExtent([0.7, 20])
+  .extent([[0, 0], [svgWidth, svgHeight]])
+  .on("zoom", zoomed)
+
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
-  const xScale = d3
+  xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
     .range([margin + 50, svgWidth - margin]);
-  const yScale = d3
+  yScale = d3
     .scaleLinear()
     .domain([9.5, 3])
     .range([margin, svgHeight - margin - 50]);
@@ -119,9 +127,22 @@ function createScatterPlot(data) {
     .select("#ScatterPlot")
     .append("svg")
     .attr("width", svgWidth)
-    .attr("height", svgHeight);
+    .attr("height", svgHeight)
+    .call(zoomBehavior)
+    
+    svg.append("defs")
+    .append("clipPath")
+    .attr("id", "clip")
+    .append("rect")
+    .attr("x", margin)
+    .attr("y", margin)
+    .attr("width", svgWidth - margin * 2 + 10)
+    .attr("height", svgHeight - margin * 2);
 
-  svg
+  const chartArea = svg.append("g")
+    .attr("clip-path", "url(#clip)");
+
+  chartArea
     .selectAll("circle")
     .data(selectedData, (d) => d.title)
     .enter()
@@ -174,7 +195,7 @@ function createScatterPlot(data) {
   // Add regression line
   const { slope, intercept } = calculateRegressionLine(data);
 
-  svg.append("line")
+  chartArea.append("line")
     .attr("class", "regression-line")
     .attr("x1", xScale(d3.min(data, d => Math.log(d.members_count) / Math.log(10))))
     .attr("y1", yScale(slope * d3.min(data, d => Math.log(d.members_count) / Math.log(10)) + intercept))
@@ -184,7 +205,7 @@ function createScatterPlot(data) {
     .attr("stroke-width", 2);
 
   // Add slope label
-  svg.append("text")
+  chartArea.append("text")
     .attr("class", "slope-label")
     .attr("x", margin + 60)
     .attr("y", margin + 20)
@@ -439,15 +460,15 @@ function mouseOverScatterPlot(event, d) {
     .style("stroke-width", "3px")
     .attr("r", 6);
 
-    scatterPlotTooltip
-      .style("visibility", "visible")
-      .html(
-        `<strong>Title:</strong> ${d.title}<br>
-         <strong>Score:</strong> ${d.score}<br>
-         <strong>Members:</strong> ${d.members_count}`
-      )
-      .style("top", `${event.pageY - 30}px`)
-      .style("left", `${event.pageX + 10}px`);
+  scatterPlotTooltip
+    .style("visibility", "visible")
+    .html(
+      `<strong>Title:</strong> ${d.title}<br>
+        <strong>Score:</strong> ${d.score}<br>
+        <strong>Members:</strong> ${d.members_count}`
+    )
+    .style("top", `${event.pageY - 30}px`)
+    .style("left", `${event.pageX + 10}px`);
   
   if (mouse_down)
     brushCircle(d);
@@ -476,9 +497,6 @@ function mouseOverHistogram(event, d) {
       )
       .style("top", `${event.pageY - 30}px`)
       .style("left", `${event.pageX + 10}px`);
-  
-  if (mouse_down)
-    brushCircle(d);
 }
 
 function mouseLeaveHistogram(event, d) {
@@ -513,14 +531,15 @@ function updateScatterPlot(data) {
   const margin = 50;
 
   const svg = d3.select("#ScatterPlot").select("svg");
+  svg.call(zoomBehavior.transform, d3.zoomIdentity);
 
   // Define scales
-  const xScale = d3
+  xScale = d3
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
     .range([margin + 50, svgWidth - margin]);
 
-  const yScale = d3
+  yScale = d3
     .scaleLinear()
     .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
     .range([margin, svgHeight - margin - 50]);
@@ -717,6 +736,33 @@ function updateHistogram(data) {
     .append("title");
 }
 
+function zoomed(event) {
+  const xAxis = d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2"));
+  const yAxis = d3.axisLeft(yScale);
+
+  const new_xScale = event.transform.rescaleX(xScale);
+  const new_yScale = event.transform.rescaleY(yScale);
+
+  const svg = d3.select("#ScatterPlot").select("svg");
+
+  //update axes
+  svg.select(".xAxis").call(xAxis.scale(new_xScale));
+  svg.select(".yAxis").call(yAxis.scale(new_yScale));
+
+  //update circles
+  svg.selectAll("circle").data(selectedData, d => d.anime_id)
+    .attr("cx", d => new_xScale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", d => new_yScale(d.score));
+
+  const { slope, intercept } = calculateRegressionLine(selectedData);
+
+  //update regression line
+  svg.select(".regression-line")
+    .attr("x1", new_xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y1", new_yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+    .attr("x2", new_xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+    .attr("y2", new_yScale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept));
+}
 
 document.body.onmousedown = function(evt) {
   if (evt.buttons & 1)
