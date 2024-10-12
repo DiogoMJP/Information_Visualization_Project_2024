@@ -12,6 +12,30 @@ var individualSelectionActive = false;
 
 mouse_down = false
 
+const histogramTooltip = d3
+    .select("#Histogram")
+    .append("div")
+    .style("position", "absolute")
+    .style("background", "#fff")
+    .style("padding", "5px 10px")
+    .style("border", "1px solid #ccc")
+    .style("border-radius", "5px")
+    .style("visibility", "hidden")
+    .style("text-align", "left")
+    .style("color", "steelblue");
+
+  const scatterPlotTooltip = d3
+    .select("#ScatterPlot")
+    .append("div")
+    .style("position", "absolute")
+    .style("background", "#fff")
+    .style("padding", "5px 10px")
+    .style("border", "1px solid #ccc")
+    .style("border-radius", "5px")
+    .style("visibility", "hidden")
+    .style("text-align", "left")
+    .style("color", "steelblue");
+
 
 // Initialization of the dashboard
 function init() {
@@ -108,8 +132,8 @@ function createScatterPlot(data) {
     .attr("fill", function(d) { return colorScale(d.season); })
     .style("stroke", "grey")
     .style("stroke-width", 1)
-    .on("mouseover", mouseOverFunction)
-    .on("mouseleave", mouseLeaveFunction)
+    .on("mouseover", mouseOverScatterPlot)
+    .on("mouseleave", mouseLeaveScatterPlot)
     .on("click", clickCircle)
     .append("title")
     .text((d) => "Title: " + d.title + "\nScore: " + d.score + "\nNumber of Members: " + d.members_count);
@@ -218,12 +242,8 @@ function createHistogram(data) {
     })
     .style("fill", "steelblue")
     .style("stroke", "black")
-    .on("mouseover", function (event, d) {
-      d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
-    })
-    .on("mouseleave", function (event, d) {
-      d3.select(this).style("stroke-width", "1px");
-    })
+    .on("mouseover", mouseOverHistogram)
+    .on("mouseleave", mouseLeaveHistogram)
     .on("click", clickBin)
     .append("title")
     .text(function (d) {
@@ -419,17 +439,58 @@ function updateData() {
   prev_bin = bin;
 }
 
-function mouseOverFunction(event, d) {
+function mouseOverScatterPlot(event, d) {
   d3.select(this)
     .style("cursor", "pointer")
     .style("stroke-width", "3px")
     .attr("r", 6);
+
+    scatterPlotTooltip
+      .style("visibility", "visible")
+      .html(
+        `<strong>Title:</strong> ${d.title}<br>
+         <strong>Score:</strong> ${d.score}<br>
+         <strong>Members:</strong> ${d.members_count}`
+      )
+      .style("top", `${event.pageY - 30}px`)
+      .style("left", `${event.pageX + 10}px`);
   
   if (mouse_down)
     brushCircle(d);
 }
 
-function mouseLeaveFunction(event, d) {
+function mouseLeaveScatterPlot(event, d) {
+  scatterPlotTooltip.style("visibility", "hidden");
+  d3.select(this)
+    .style("stroke-width", "1px")
+    .attr("r", 3);
+}
+
+function mouseOverHistogram(event, d) {
+  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
+
+  d3.select(this)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 6);
+
+    histogramTooltip
+      .style("visibility", "visible")
+      .html(
+        `<strong>Count:</strong> ${d.length}<br>
+         <strong>Range:</strong>[${d.x0} - ${d.x0 + 0.5}[`
+      )
+      .style("top", `${event.pageY - 30}px`)
+      .style("left", `${event.pageX + 10}px`);
+  
+  if (mouse_down)
+    brushCircle(d);
+}
+
+function mouseLeaveHistogram(event, d) {
+  d3.select(this).style("stroke-width", "1px");
+
+  histogramTooltip.style("visibility", "hidden");
   d3.select(this)
     .style("stroke-width", "1px")
     .attr("r", 3);
@@ -505,8 +566,8 @@ function updateScatterPlot(data) {
 
   // Reapply event listeners and set colors
   svg.selectAll("circle")
-    .on("mouseover", mouseOverFunction)
-    .on("mouseleave", mouseLeaveFunction)
+    .on("mouseover", mouseOverScatterPlot)
+    .on("mouseleave", mouseLeaveScatterPlot)
     .on("click", clickCircle)
     .attr("fill", (d) => {
       if (individualSelectedData.length != 0) {
@@ -588,6 +649,7 @@ function updateHistogram(data) {
     .data(data, (d) => d.title)
     .exit()
     .remove();
+
   svg
     .select("g.yAxis")
     .transition()
@@ -620,12 +682,8 @@ function updateHistogram(data) {
     })
     .style("fill", "gray")
     .style("stroke", "black")
-    .on("mouseover", function (event, d) {
-      d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
-    })
-    .on("mouseleave", function (event, d) {
-      d3.select(this).style("stroke-width", "1px");
-    })
+    .on("mouseover", mouseOverHistogram)
+    .on("mouseleave", mouseLeaveHistogram)
     .on("click", clickBin)
     .append("title")
     .text(function (d) {
@@ -663,12 +721,8 @@ function updateHistogram(data) {
       return season == null ? "steelblue" : colorScale(season);
     })
     .style("stroke", "black")
-    .on("mouseover", function (event, d) {
-      d3.select(this).style("cursor", "pointer").style("stroke-width", "3px");
-    })
-    .on("mouseleave", function (event, d) {
-      d3.select(this).style("stroke-width", "1px");
-    })
+    .on("mouseover", mouseOverHistogram)
+    .on("mouseleave", mouseLeaveHistogram)
     .on("click", clickBin)
     .append("title")
     .text(function (d) {
