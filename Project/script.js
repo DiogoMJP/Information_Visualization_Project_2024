@@ -36,7 +36,7 @@ const histogramTooltip = d3
     .style("color", "steelblue");
 
 const scatterPlotTooltip = d3
-  .select("#ScatterPlot")
+  .select("body")
   .append("div")
   .style("position", "absolute")
   .style("background", "#fff")
@@ -499,7 +499,8 @@ function mouseOverScatterPlot(event, d) {
     .html(
       `<strong>Title:</strong> ${d.title}<br>
         <strong>Score:</strong> ${d.score}<br>
-        <strong>Members:</strong> ${d.members_count}`
+        <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Season:</strong> ${d.season}`
     )
 
   const tooltipWidth = parseInt(scatterPlotTooltip.style("width"), 10);
