@@ -244,15 +244,27 @@
   grid-row: 3;
 }
 #ScatterPlot {
+  position:relative;
   grid-row: span 2;
   display: flex;
   justify-content: center;
 }
+#scatter_plot_info {
+  position: absolute;
+}
 #individual_selection_reset_button {
   font-size: 12px;
   margin: 4px;
-  position: fixed;
+  position: relative;
   background-color: aliceblue;
+}
+#slope_value {
+  position: relative;
+  height: fit-content;
+  font-size: 12px;
+  color: steelblue;
+  margin: 4px;
+  text-align: center;
 }
 .tooltip {
   position: absolute;
@@ -271,6 +283,7 @@ html,
 body {
   height: 100%;
   margin: 0;
+  font-family: Arial;
   background-color: rgb(204, 219, 251);
 }
 
