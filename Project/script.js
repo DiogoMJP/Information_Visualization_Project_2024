@@ -14,6 +14,9 @@ var selectionActive = false;
 var individualSelectionActive = false;
 var updateDueToIndividualSelection = false;
 
+var zoom_x_scale = null;
+var zoom_y_scale = null;
+
 var xScale;
 var yScale;
 var zoomBehavior;
@@ -136,10 +139,12 @@ function createScatterPlot(data) {
     .scaleLinear()
     .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
     .range([margin + 50, svgWidth - margin]);
+  zoom_x_scale = xScale;
   yScale = d3
     .scaleLinear()
     .domain([9.5, 3])
     .range([margin, svgHeight - margin - 50]);
+  zoom_y_scale = yScale;
 
   // Create the svg for the graph
   const svg = d3
@@ -555,54 +560,95 @@ function updateScatterPlot(data) {
   const margin = 50;
 
   const svg = d3.select("#ScatterPlot").select("svg");
-  
-  // Define scales
-  xScale = d3
-    .scaleLinear()
-    .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
-    .range([margin + 50, svgWidth - margin]);
-  yScale = d3
-    .scaleLinear()
-    .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
-    .range([margin, svgHeight - margin - 50]);
+
+  var x_scale, y_scale;
 
   const colorScale = d3.scaleOrdinal()
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
   if (changed_bin || changed_season) {
+    xScale = d3
+      .scaleLinear()
+      .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+      .range([margin + 50, svgWidth - margin]);
+    x_scale = xScale;
+    yScale = d3
+      .scaleLinear()
+      .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
+      .range([margin, svgHeight - margin - 50]);
+    y_scale = yScale;
+      
+    // Update axes
+    svg.select("g.yAxis")
+      .transition()
+      .duration(500)
+      .attr("transform", `translate(${margin},0)`)
+      .call(d3.axisLeft(y_scale));
+
+    svg.select("g.xAxis")
+      .transition()
+      .duration(500)
+      .attr("transform", `translate(0,${svgHeight - margin})`)
+      .call(d3.axisBottom(x_scale).tickSizeOuter(0).tickFormat(d3.format(".2")));
+
+    svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity);
+
+    svg
+    .selectAll("circle")
+    .style("opacity", 0);
+
     svg
       .selectAll("circle")
       .filter((d) => season == null || season == d.season)
       .style("opacity", 1);
-  }
   
-  if (!updateDueToIndividualSelection) {
-    svg.call(zoomBehavior.transform, d3.zoomIdentity);
-    svg
-      .selectAll("circle")
+    // Update regression line
+    const { slope, intercept } = calculateRegressionLine(selectedData);
+
+    svg.select(".regression-line")
       .transition()
-      .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-      .attr("cy", (d) => yScale(d.score))
       .duration(500)
-      .end()
-      .catch(() => {
-        svg
-          .selectAll("circle")
-          .filter((data, index) => !selectedData.includes(data))
-          .style("pointer-events", "none")
-          .style("opacity", 0);
-      })
-      .then(() => {
-        svg
-          .selectAll("circle")
-          .filter((data, index) => !selectedData.includes(data))
-          .style("pointer-events", "none")
-          .style("opacity", 0);
-      });
+      .attr("x1", x_scale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+      .attr("y1", y_scale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+      .attr("x2", x_scale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+      .attr("y2", y_scale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+      .attr("stroke", "steelblue");
+
+    // Update slope label
+    document.getElementById("slope_value").textContent = "Slope: " + slope.toFixed(4);
+  } else {
+    const xAxis = d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2"));
+    const yAxis = d3.axisLeft(yScale);
+    x_scale = zoom_x_scale;
+    y_scale = zoom_y_scale;
+    svg.select("g.xAxis").call(xAxis.scale(x_scale));
+    svg.select("g.yAxis").call(yAxis.scale(y_scale));
   }
 
-  if (individualSelectionActive) {
+  svg
+    .selectAll("circle")
+    .transition()
+    .attr("cx", (d) => x_scale(Math.log(d.members_count) / Math.log(10)))
+    .attr("cy", (d) => y_scale(d.score))
+    .duration(500)
+    .end()
+    .catch(() => {
+      svg
+        .selectAll("circle")
+        .filter((data, index) => !selectedData.includes(data))
+        .style("pointer-events", "none")
+        .style("opacity", 0);
+    })
+    .then(() => {
+      svg
+        .selectAll("circle")
+        .filter((data, index) => !selectedData.includes(data))
+        .style("pointer-events", "none")
+        .style("opacity", 0);
+    });
+
+  if (individualSelectedData.length != 0) {
     svg
       .selectAll("circle")
       .filter((data, _) => selectedData.includes(data))
@@ -624,39 +670,6 @@ function updateScatterPlot(data) {
         return colorScale(d.season);
       });
   }
-
-  if (!updateDueToIndividualSelection) {
-    // Update axes
-    svg.select("g.yAxis")
-        .transition()
-        .duration(500)
-        .attr("transform", `translate(${margin},0)`)
-        .call(d3.axisLeft(yScale));
-
-    svg.select("g.xAxis")
-        .transition()
-        .duration(500)
-        .attr("transform", `translate(0,${svgHeight - margin})`)
-        .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
-  
-  
-    // Update regression line
-    const { slope, intercept } = calculateRegressionLine(selectedData);
-
-    svg.select(".regression-line")
-      .transition()
-      .duration(500)
-      .attr("x1", xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
-      .attr("y1", yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
-      .attr("x2", xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
-      .attr("y2", yScale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
-      .attr("stroke", "steelblue");
-
-    // Update slope label
-    document.getElementById("slope_value").textContent = "Slope: " + slope.toFixed(4);
-  }
-
-  updateDueToIndividualSelection = false;
 }
 
 function updateHistogram(data) {
@@ -771,6 +784,9 @@ function zoomed(event) {
 
   const new_xScale = event.transform.rescaleX(xScale);
   const new_yScale = event.transform.rescaleY(yScale);
+
+  zoom_x_scale = event.transform.rescaleX(xScale);
+  zoom_y_scale = event.transform.rescaleY(yScale);
 
   const svg = d3.select("#ScatterPlot").select("svg");
 
