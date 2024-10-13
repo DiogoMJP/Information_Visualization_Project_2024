@@ -192,7 +192,7 @@ function createScatterPlot(data) {
     .append("g")
     .attr("class", "yAxis")
     .attr("transform", `translate(${margin},0)`)
-    .call(d3.axisLeft(yScale));
+    .call(d3.axisLeft(yScale).tickSizeOuter(0));
   svg.append('path')
     .attr('d', drawSkip(true, margin, svgHeight - margin))
     .attr('stroke', 'black')
@@ -319,10 +319,7 @@ function createHistogram(data) {
     .append("g")
     .attr("class", "yAxis")
     .attr("transform", `translate(${margin},0)`)
-    .call(d3.axisLeft(yScale)
-      .ticks(14)
-      .tickValues(d3.range(0, d3.max(bins, function (d) {return d.length;}), 50))
-  );
+    .call(d3.axisLeft(yScale).tickSizeOuter(0));
 
   svg
     .append("text")
@@ -331,6 +328,13 @@ function createHistogram(data) {
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Score");
+  svg
+    .append("text")
+    .attr("x", margin)
+    .attr("y", 20)
+    .attr("font-size", 10)
+    .attr("text-anchor", "middle")
+    .text("Count");
 }
 
 
@@ -584,7 +588,7 @@ function updateScatterPlot(data) {
       .transition()
       .duration(500)
       .attr("transform", `translate(${margin},0)`)
-      .call(d3.axisLeft(y_scale));
+      .call(d3.axisLeft(y_scale).tickSizeOuter(0));
 
     svg.select("g.xAxis")
       .transition()
@@ -618,12 +622,8 @@ function updateScatterPlot(data) {
     // Update slope label
     document.getElementById("slope_value").textContent = "Slope: " + slope.toFixed(4);
   } else {
-    const xAxis = d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2"));
-    const yAxis = d3.axisLeft(yScale);
     x_scale = zoom_x_scale;
     y_scale = zoom_y_scale;
-    svg.select("g.xAxis").call(xAxis.scale(x_scale));
-    svg.select("g.yAxis").call(yAxis.scale(y_scale));
   }
 
   svg
@@ -708,7 +708,7 @@ function updateHistogram(data) {
     .transition()
     .duration(750)
     .attr("transform", `translate(${margin},0)`)
-    .call(d3.axisLeft(yScale));
+    .call(d3.axisLeft(yScale).tickSizeOuter(0));
   
 
   svg.selectAll("rect.selected")
