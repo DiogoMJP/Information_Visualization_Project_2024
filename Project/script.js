@@ -12,6 +12,7 @@ var clicked_anime_id = null;
 var brushed_anime_id = null;
 var selectionActive = false;
 var individualSelectionActive = false;
+var updateDueToIndividualSelection = false;
 
 var xScale;
 var yScale;
@@ -332,6 +333,7 @@ function createHistogram(data) {
 function clickAnime(id) {
   //if all points are selected, it means its the first selection so make that the only selected point
   clicked_anime_id = id;
+  updateDueToIndividualSelection = true;
 
   updateData();
   createAnimeList();
@@ -374,10 +376,8 @@ function resetIndividualSelection() {
 }
 
 function clickCircle(event, d) {
-  // idk 
-  //if (!d || !d.anime_id) return;  // Exit if data is invalid
-
   clicked_anime_id = d.anime_id;
+  updateDueToIndividualSelection = true;
 
   updateData();
   createAnimeList();
@@ -390,6 +390,7 @@ function brushCircle(d) {
   if (!individualSelectedData.some((anime) => anime.anime_id == d.anime_id)) {
     brushed_anime_id = d.anime_id;
   }
+  updateDueToIndividualSelection = true;
 
   updateData();
   createAnimeList();
@@ -532,7 +533,7 @@ function mouseOverHistogram(event, d) {
       .style("visibility", "visible")
       .html(
         `<strong>Count:</strong> ${d.length}<br>
-         <strong>Range:</strong>[${d.x0} - ${d.x0 + 0.5}[`
+         <strong>Range:</strong> [${d.x0} - ${d.x0 + 0.5}[`
       )
       .style("top", `${event.pageY - 30}px`)
       .style("left", `${event.pageX + 10}px`);
@@ -554,8 +555,7 @@ function updateScatterPlot(data) {
   const margin = 50;
 
   const svg = d3.select("#ScatterPlot").select("svg");
-  svg.call(zoomBehavior.transform, d3.zoomIdentity);
-
+  
   // Define scales
   xScale = d3
     .scaleLinear()
@@ -570,48 +570,6 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  /* // Update existing circles and add new ones
-  const circles = svg.select("g").selectAll("circle")
-    .data(selectedData, d => d.anime_id);
-
-  // Enter selection
-  circles.enter()
-    .append("circle")
-    .attr("r", 3)
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score))
-    .style("opacity", 0)
-    .merge(circles)
-    .transition()
-    .duration(500)
-    .ease(d3.easeLinear)
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score)) // Use score directly
-    .style("opacity", 1)
-    .style("stroke", "grey")
-    .style("stroke-width", 1);
-
-  // Exit selection
-  circles.exit()
-    .transition()
-    .duration(500)
-    .ease(d3.easeLinear)
-    .style("opacity", 0)
-    .remove();
-
-  // Reapply event listeners and set colors
-  svg.selectAll("circle")
-    .on("mouseover", mouseOverScatterPlot)
-    .on("mouseleave", mouseLeaveScatterPlot)
-    .on("click", clickCircle)
-    .attr("fill", (d) => {
-      if (individualSelectedData.length != 0) {
-        return individualSelectedData.some(sd => sd.anime_id === d.anime_id) ? colorScale(d.season) : "gray";
-      } else {
-        return colorScale(d.season);
-      }
-    }); */
-
   if (changed_bin || changed_season) {
     svg
       .selectAll("circle")
@@ -619,29 +577,32 @@ function updateScatterPlot(data) {
       .style("opacity", 1);
   }
   
-  svg
-    .selectAll("circle")
-    .transition()
-    .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
-    .attr("cy", (d) => yScale(d.score))
-    .duration(500)
-    .end()
-    .catch(() => {
-      svg
-        .selectAll("circle")
-        .filter((data, index) => !selectedData.includes(data))
-        .style("pointer-events", "none")
-        .style("opacity", 0);
-    })
-    .then(() => {
-      svg
-        .selectAll("circle")
-        .filter((data, index) => !selectedData.includes(data))
-        .style("pointer-events", "none")
-        .style("opacity", 0);
-    });
+  if (!updateDueToIndividualSelection) {
+    svg.call(zoomBehavior.transform, d3.zoomIdentity);
+    svg
+      .selectAll("circle")
+      .transition()
+      .attr("cx", (d) => xScale(Math.log(d.members_count) / Math.log(10)))
+      .attr("cy", (d) => yScale(d.score))
+      .duration(500)
+      .end()
+      .catch(() => {
+        svg
+          .selectAll("circle")
+          .filter((data, index) => !selectedData.includes(data))
+          .style("pointer-events", "none")
+          .style("opacity", 0);
+      })
+      .then(() => {
+        svg
+          .selectAll("circle")
+          .filter((data, index) => !selectedData.includes(data))
+          .style("pointer-events", "none")
+          .style("opacity", 0);
+      });
+  }
 
-  if (individualSelectedData.length != 0) {
+  if (individualSelectionActive) {
     svg
       .selectAll("circle")
       .filter((data, _) => selectedData.includes(data))
@@ -664,33 +625,38 @@ function updateScatterPlot(data) {
       });
   }
 
-  // Update axes
-  svg.select("g.yAxis")
+  if (!updateDueToIndividualSelection) {
+    // Update axes
+    svg.select("g.yAxis")
+        .transition()
+        .duration(500)
+        .attr("transform", `translate(${margin},0)`)
+        .call(d3.axisLeft(yScale));
+
+    svg.select("g.xAxis")
+        .transition()
+        .duration(500)
+        .attr("transform", `translate(0,${svgHeight - margin})`)
+        .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
+  
+  
+    // Update regression line
+    const { slope, intercept } = calculateRegressionLine(selectedData);
+
+    svg.select(".regression-line")
       .transition()
       .duration(500)
-      .attr("transform", `translate(${margin},0)`)
-      .call(d3.axisLeft(yScale));
+      .attr("x1", xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+      .attr("y1", yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+      .attr("x2", xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
+      .attr("y2", yScale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
+      .attr("stroke", "steelblue");
 
-  svg.select("g.xAxis")
-      .transition()
-      .duration(500)
-      .attr("transform", `translate(0,${svgHeight - margin})`)
-      .call(d3.axisBottom(xScale).tickSizeOuter(0).tickFormat(d3.format(".2")));
-    
-  // Update regression line
-  const { slope, intercept } = calculateRegressionLine(selectedData);
+    // Update slope label
+    document.getElementById("slope_value").textContent = "Slope: " + slope.toFixed(4);
+  }
 
-  svg.select(".regression-line")
-    .transition()
-    .duration(500)
-    .attr("x1", xScale(d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10))))
-    .attr("y1", yScale(slope * d3.min(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
-    .attr("x2", xScale(d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10))))
-    .attr("y2", yScale(slope * d3.max(selectedData, d => Math.log(d.members_count) / Math.log(10)) + intercept))
-    .attr("stroke", "steelblue");
-
-  // Update slope label
-  document.getElementById("slope_value").textContent = "Slope: " + slope.toFixed(4);
+  updateDueToIndividualSelection = false;
 }
 
 function updateHistogram(data) {
