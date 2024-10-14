@@ -256,6 +256,7 @@
   font-size: 12px;
   margin: 4px;
   position: relative;
+  border: lightblue solid 1px;
   background-color: aliceblue;
 }
 .scatter_plot_button:hover {
