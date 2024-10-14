@@ -257,7 +257,7 @@
   margin: 4px;
   position: relative;
   border: lightblue solid 1px;
-  background-color: aliceblue;
+  background-color: white;
 }
 .scatter_plot_button:hover {
   background-color: lightskyblue;
