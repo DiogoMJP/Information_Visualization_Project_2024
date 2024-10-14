@@ -692,7 +692,7 @@ function updateHistogram(data) {
     .domain([3, 9.5])
     .range([margin + 50, svgWidth - margin]);
   
-  histogram = d3.histogram().domain(xScale.domain());
+  histogram = d3.histogram().domain(xScale.domain()).thresholds(xScale.ticks(14));
   bins = histogram(scoreData);
   selectedBins = histogram(selectedScoreData);
   individualSelectedBins = histogram(individualSelectedScoreData);
