@@ -384,6 +384,11 @@ function resetIndividualSelection() {
   }, 0);
 }
 
+function resetScatterPlotZoom() {
+  const svg = d3.select("#ScatterPlot").select("svg");
+  svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity);
+}
+
 function clickCircle(event, d) {
   clicked_anime_id = d.anime_id;
   updateDueToIndividualSelection = true;
@@ -687,7 +692,7 @@ function updateHistogram(data) {
     .domain([3, 9.5])
     .range([margin + 50, svgWidth - margin]);
   
-  histogram = d3.histogram().domain(xScale.domain()).thresholds(xScale.ticks(14));
+  histogram = d3.histogram().domain(xScale.domain());
   bins = histogram(scoreData);
   selectedBins = histogram(selectedScoreData);
   individualSelectedBins = histogram(individualSelectedScoreData);

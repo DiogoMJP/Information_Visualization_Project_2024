@@ -252,11 +252,14 @@
 #scatter_plot_info {
   position: absolute;
 }
-#individual_selection_reset_button {
+.scatter_plot_button {
   font-size: 12px;
   margin: 4px;
   position: relative;
   background-color: aliceblue;
+}
+.scatter_plot_button:hover {
+  background-color: lightskyblue;
 }
 #slope_value {
   position: relative;
