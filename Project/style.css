@@ -14,10 +14,10 @@
   border-style: solid;
   border-width: 2px;
   border-color: lightgrey;
-  background-color: rgba(255, 255, 255, 0.8);
+  background-color: aliceblue;
 }
 #FilterContainer {
-  background-color: rgba(241, 249, 255, 0.8);
+  background-color: aliceblue;
   grid-row: 1 / span 3;
   border-style: none solid none none;
   border-width: 3px;
@@ -120,7 +120,7 @@
   height: fit-content;
   border-style: solid;
   border-width: 2px;
-  border-color: white;
+  border-color: aliceblue;
   padding: 2px;
   color: white;
   text-align: center;
