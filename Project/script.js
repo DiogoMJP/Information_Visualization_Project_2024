@@ -8,6 +8,9 @@ var changed_bin = false;
 var season = null;
 var prev_season = null;
 var changed_season = false;
+var genre = null;
+var prev_genre = null;
+var changed_genre = false;
 var clicked_anime_id = null;
 var brushed_anime_id = null;
 var selectionActive = false;
@@ -54,6 +57,7 @@ function init() {
     globalData = data;
     selectedData = data;
     createAnimeList();
+    createGenreFilter();
     createScatterPlot(globalData);
     createHistogram(globalData);
   });
@@ -92,6 +96,27 @@ function createAnimeList() {
   for (anime of individualAnimeListSelectedData) {
     let anime_list_element = document.getElementById(anime.anime_id)
     anime_list_element.setAttribute("class", "anime_list_element clicked");
+  }
+}
+
+function createGenreFilter() {
+  genres = Array.from(new Set(globalData.map((elem) => elem.genres).flat(1)));
+  genre_filter = document.getElementById("genre_select")
+  genre_filter.innerHTML = "";
+
+  let genre_filter_element = document.createElement("option");
+  genre_filter_element.setAttribute("id", "none_genre");
+  genre_filter_element.setAttribute("value", "none");
+  genre_filter_element.setAttribute("selected", "selected");
+  genre_filter_element.innerText += "Choose an Option";
+  genre_filter.append(genre_filter_element);
+  
+  for (let genre of genres) {
+    let genre_filter_element = document.createElement("option");
+    genre_filter_element.setAttribute("id", genre);
+    genre_filter_element.setAttribute("value", genre);
+    genre_filter_element.innerText += genre;
+    genre_filter.append(genre_filter_element);
   }
 }
 
@@ -370,7 +395,22 @@ function clickSeason(name) {
   createAnimeList();
   updateHistogram(globalData);
   updateScatterPlot(globalData);
-  }
+}
+
+function clickGenre() {
+  prev_genre = genre;
+  genre_filter = document.getElementById("genre_select");
+  genre = genre_filter.value;
+  
+  if (genre == "none")
+    genre = null;
+  
+  // Update data and visuals
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
 
 function resetIndividualSelection() {
   individualSelectedData = [];
@@ -477,6 +517,16 @@ function updateData() {
     selectionActive = true;
   }
 
+  if (genre != null) {
+    selectedData = selectedData.filter(function (elem) {
+      return elem.genres.includes(genre);
+    });
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return elem.genres.includes(genre);
+    });
+    selectionActive = true;
+  }
+
   if (individualSelectedData.length == 0) {
     individualSelectionActive = false;
   }
@@ -489,6 +539,12 @@ function updateData() {
   else
     changed_season = false;
   prev_season = season;
+
+  if (prev_genre != genre) 
+    changed_genre = true;
+  else
+    changed_genre = false;
+  prev_genre = genre;
 
   if (prev_bin != bin) 
     changed_bin = true;
@@ -577,7 +633,7 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  if (changed_bin || changed_season) {
+  if (changed_bin || changed_season || changed_genre) {
     xScale = d3
       .scaleLinear()
       .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
@@ -611,6 +667,7 @@ function updateScatterPlot(data) {
     svg
       .selectAll("circle")
       .filter((d) => season == null || season == d.season)
+      .filter((d) => genre == null || d.genres.includes(genre))
       .style("opacity", 1);
   
     // Update regression line
