@@ -11,6 +11,9 @@ var changed_season = false;
 var genre = null;
 var prev_genre = null;
 var changed_genre = false;
+var source = null;
+var prev_source = null;
+var changed_source = false;
 var clicked_anime_id = null;
 var brushed_anime_id = null;
 var selectionActive = false;
@@ -58,6 +61,7 @@ function init() {
     selectedData = data;
     createAnimeList();
     createGenreFilter();
+    createSourceFilter();
     createScatterPlot(globalData);
     createHistogram(globalData);
   });
@@ -117,6 +121,27 @@ function createGenreFilter() {
     genre_filter_element.setAttribute("value", genre);
     genre_filter_element.innerText += genre;
     genre_filter.append(genre_filter_element);
+  }
+}
+
+function createSourceFilter() {
+  sources = Array.from(new Set(globalData.map((elem) => elem.source_type)));
+  source_filter = document.getElementById("source_select")
+  source_filter.innerHTML = "";
+
+  let source_filter_element = document.createElement("option");
+  source_filter_element.setAttribute("id", "none_source");
+  source_filter_element.setAttribute("value", "none");
+  source_filter_element.setAttribute("selected", "selected");
+  source_filter_element.innerText += "Choose an Option";
+  source_filter.append(source_filter_element);
+  
+  for (let source of sources) {
+    let source_filter_element = document.createElement("option");
+    source_filter_element.setAttribute("id", source);
+    source_filter_element.setAttribute("value", source);
+    source_filter_element.innerText += source;
+    source_filter.append(source_filter_element);
   }
 }
 
@@ -412,6 +437,21 @@ function clickGenre() {
   updateScatterPlot(globalData);
 }
 
+function clickSource() {
+  prev_source = source;
+  source_filter = document.getElementById("source_select");
+  source = source_filter.value;
+  
+  if (source == "none")
+    source = null;
+  
+  // Update data and visuals
+  updateData();
+  createAnimeList();
+  updateHistogram(globalData);
+  updateScatterPlot(globalData);
+}
+
 function resetIndividualSelection() {
   individualSelectedData = [];
   updateData();
@@ -527,6 +567,16 @@ function updateData() {
     selectionActive = true;
   }
 
+  if (source != null) {
+    selectedData = selectedData.filter(function (elem) {
+      return elem.source_type == source;
+    });
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return elem.source_type == source;
+    });
+    selectionActive = true;
+  }
+
   if (individualSelectedData.length == 0) {
     individualSelectionActive = false;
   }
@@ -545,6 +595,12 @@ function updateData() {
   else
     changed_genre = false;
   prev_genre = genre;
+
+  if (prev_source != source) 
+    changed_source = true;
+  else
+    changed_source = false;
+  prev_source = source;
 
   if (prev_bin != bin) 
     changed_bin = true;
@@ -633,7 +689,7 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  if (changed_bin || changed_season || changed_genre) {
+  if (changed_bin || changed_season || changed_genre || changed_source) {
     xScale = d3
       .scaleLinear()
       .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
@@ -668,6 +724,7 @@ function updateScatterPlot(data) {
       .selectAll("circle")
       .filter((d) => season == null || season == d.season)
       .filter((d) => genre == null || d.genres.includes(genre))
+      .filter((d) => source == null || d.source_type == source)
       .style("opacity", 1);
   
     // Update regression line
