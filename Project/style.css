@@ -84,26 +84,23 @@
   height: fit-content;
   border-style: solid;
   border-width: 1px;
-  margin: 1px;
+  margin: 2px;
   border-color: lightblue;
   cursor: pointer;
 }
-.anime_list_element.unclicked {
-  background-color: aliceblue;
-}
 .anime_list_element.unclicked:hover {
-  background-color: lightskyblue;
   border-width: 2px;
-  margin: 0px;
+  border-color: royalblue;
 }
 .anime_list_element.clicked {
-  background-color: cornflowerblue;
-  border-color: lightblue;
+  font-weight: bolder;
+  border-width: 2px;
+  border-color: black;
 }
 .anime_list_element.clicked:hover {
-  background-color: lightskyblue;
-  border-width: 2px;
-  margin: 0px;
+  font-weight: bold;
+  border-width: 3px;
+  border-color: black;
 }
 #season_filter {
   margin: 2% 0;
@@ -295,7 +292,7 @@ html,
 body {
   height: 100%;
   margin: 0;
-  font-family: Arial;
+  font-family: Verdana;
   background-color: rgb(204, 219, 251);
   overflow: hidden;
 }

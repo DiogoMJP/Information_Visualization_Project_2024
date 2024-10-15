@@ -88,11 +88,20 @@ function createAnimeList() {
     individualAnimeListSelectedData = individualSelectedData;
   }
 
+  const colorScale = d3
+    .scaleLog()
+    .domain([d3.min(selectedData, d => d.num_episodes), d3.max(selectedData, d => d.num_episodes)])
+    .range(["white", "steelblue"]);
+  
+  console.log(colorScale(100))
+
   for (anime of animeListSelectedData) {
+    console.log(anime.num_episodes, colorScale(anime.num_episodes))
     let anime_list_element = document.createElement("div")
     anime_list_element.setAttribute("class", "anime_list_element unclicked");
     anime_list_element.setAttribute("id", anime.anime_id);
     anime_list_element.setAttribute("onclick", "clickAnime("+anime.anime_id+");")
+    anime_list_element.style.backgroundColor = colorScale(anime.num_episodes);
     anime_list_element.innerText += anime.title;
     anime_list.append(anime_list_element);
   }
