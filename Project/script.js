@@ -29,8 +29,8 @@ var zoomBehavior;
 
 mouse_down = false
 
-const histogramTooltip = d3
-    .select("#Histogram")
+const tooltip = d3
+    .select("body")
     .append("div")
     .style("position", "absolute")
     .style("background", "#fff")
@@ -40,19 +40,6 @@ const histogramTooltip = d3
     .style("visibility", "hidden")
     .style("text-align", "left")
     .style("color", "steelblue");
-
-const scatterPlotTooltip = d3
-  .select("body")
-  .append("div")
-  .style("position", "absolute")
-  .style("background", "#fff")
-  .style("padding", "5px 10px")
-  .style("border", "1px solid #ccc")
-  .style("border-radius", "5px")
-  .style("visibility", "hidden")
-  .style("text-align", "left")
-  .style("color", "steelblue");
-
 
 // Initialization of the dashboard
 function init() {
@@ -64,6 +51,7 @@ function init() {
     createSourceFilter();
     createScatterPlot(globalData);
     createHistogram(globalData);
+    createSunburst();
   });
 }
 
@@ -92,11 +80,8 @@ function createAnimeList() {
     .scaleLog()
     .domain([d3.min(selectedData, d => d.num_episodes), d3.max(selectedData, d => d.num_episodes)])
     .range(["white", "steelblue"]);
-  
-  console.log(colorScale(100))
 
   for (anime of animeListSelectedData) {
-    console.log(anime.num_episodes, colorScale(anime.num_episodes))
     let anime_list_element = document.createElement("div")
     anime_list_element.setAttribute("class", "anime_list_element unclicked");
     anime_list_element.setAttribute("id", anime.anime_id);
@@ -396,6 +381,143 @@ function createHistogram(data) {
     .text("Count");
 }
 
+function createSunburst() {
+  treeData = buildTree(selectedData);
+
+  // Core sunburst
+  const svgWidth = d3.select("#Sunburst").node().clientWidth;
+  const svgHeight = d3.select("#Sunburst").node().clientHeight;
+  const margin = 10;
+
+  const radius = Math.min(svgWidth - margin, svgHeight - margin) / 2;
+
+  const partition = d3.partition().size([2 * Math.PI, radius]);
+
+  const arc = d3
+  .arc()
+  .startAngle(d => d.x0)
+  .endAngle(d => d.x1)
+  .innerRadius(function (d) {
+    switch (d.depth) {
+      case 0:
+        return d.y0 * 0.4;
+      case 1:
+        return d.y0 * 0.5;
+      case 2:
+        return d.y0;
+      default:
+        return d.y0;
+    }
+  })
+  .outerRadius(d => d.y1);
+
+  const svg = d3
+    .select("#Sunburst")
+    .append("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
+
+  const root = d3
+    .hierarchy(treeData)
+    .sum(function (d) {
+      return d.value;
+    })
+    .sort(function (a, b) {
+      return b.value - a.value;
+    });
+
+  const nodes = partition(root).descendants();
+
+  const g = svg
+    .append("g")
+    .attr("transform", `translate(${svgWidth / 2}, ${svgHeight / 2})`);
+
+  g
+    .selectAll("path")
+    .data(nodes)
+    .enter()
+    .append("path")
+    .attr("d", arc)
+    .style("fill", function (d) {
+      switch (d.depth) {
+        case 0:
+          return "none";
+        case 1:
+          return "steelblue";
+        case 2:
+          return "lightblue";
+
+        default:
+          break;
+      }
+      return "steelblue";
+    })
+    .style("stroke", "black")
+    .on("mouseover", mouseOverSunburst)
+    .on("mouseleave", mouseLeaveSunburst);
+
+    svg
+    .append("rect")
+    .attr("x", svgWidth - 90)
+    .attr("y", 50)
+    .attr("width", 60)
+    .attr("height", 20)
+    .style("fill", "lightblue")
+    .style("stroke", "black");
+  
+  svg
+    .append("text")
+    .attr("x", svgWidth - 60)
+    .attr("y", 65)
+    .attr("text-anchor", "middle")
+    .text("Source")
+    .style("font-size", "12px")
+    .style("fill", "black");
+  
+  svg
+    .append("rect")
+    .attr("x", svgWidth - 90)
+    .attr("y", 25)
+    .attr("width", 60)
+    .attr("height", 20)
+    .style("fill", "steelblue")
+    .style("stroke", "black");
+  
+  svg
+    .append("text")
+    .attr("x", svgWidth - 60)
+    .attr("y", 40)
+    .attr("text-anchor", "middle")
+    .text("Genre")
+    .style("font-size", "12px")
+    .style("fill", "white");
+}
+
+function buildTree(data) {
+  const tree = { name: "Total", children: [] };
+
+  data.forEach((item) => {
+    const { genres, source_type } = item;
+
+     genres.forEach((genre) => {
+      let genreNode = tree.children.find((node) => node.name === genre);
+      if (!genreNode) {
+        genreNode = { name: genre, children: [] };
+        tree.children.push(genreNode);
+      }
+
+      let sourceNode = genreNode.children.find((node) => node.name === source_type);
+      if (!sourceNode) {
+        sourceNode = { name: source_type, value: 1 };
+        genreNode.children.push(sourceNode);
+      } else {
+        sourceNode.value += 1;
+      }
+    });
+  });
+
+  return tree;
+}
 
 // Interaction managers
 function clickAnime(id) {
@@ -624,7 +746,7 @@ function mouseOverScatterPlot(event, d) {
     .style("stroke-width", "3px")
     .attr("r", 6);
 
-  scatterPlotTooltip
+    tooltip
     .style("visibility", "visible")
     .html(
       `<strong>Title:</strong> ${d.title}<br>
@@ -633,8 +755,8 @@ function mouseOverScatterPlot(event, d) {
         <strong>Season:</strong> ${d.season}`
     )
 
-  const tooltipWidth = parseInt(scatterPlotTooltip.style("width"), 10);
-  const tooltipHeight = parseInt(scatterPlotTooltip.style("height"), 10);
+  const tooltipWidth = parseInt(tooltip.style("width"), 10);
+  const tooltipHeight = parseInt(tooltip.style("height"), 10);
   let top = event.pageY - tooltipHeight - 10;
   let left = event.pageX + 10;
 
@@ -642,7 +764,7 @@ function mouseOverScatterPlot(event, d) {
     left = event.pageX - tooltipWidth - 30; //position to the left of the mouse if there's not enough space to the right
   }
 
-  scatterPlotTooltip
+  tooltip
     .style("top", `${top}px`)
     .style("left", `${left}px`);
 
@@ -651,7 +773,7 @@ function mouseOverScatterPlot(event, d) {
 }
 
 function mouseLeaveScatterPlot(event, d) {
-  scatterPlotTooltip.style("visibility", "hidden");
+  tooltip.style("visibility", "hidden");
   d3.select(this)
     .style("stroke-width", "1px")
     .attr("r", 3);
@@ -665,7 +787,7 @@ function mouseOverHistogram(event, d) {
     .style("stroke-width", "3px")
     .attr("r", 6);
 
-    histogramTooltip
+    tooltip
       .style("visibility", "visible")
       .html(
         `<strong>Count:</strong> ${d.length}<br>
@@ -678,11 +800,45 @@ function mouseOverHistogram(event, d) {
 function mouseLeaveHistogram(event, d) {
   d3.select(this).style("stroke-width", "1px");
 
-  histogramTooltip.style("visibility", "hidden");
+  tooltip.style("visibility", "hidden");
   d3.select(this)
     .style("stroke-width", "1px")
     .attr("r", 3);
 }
+
+function mouseOverSunburst(event, d) {
+  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px").raise();
+
+  d3.select(this)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 6);
+    if (d.depth == 1)
+      tooltip.html(
+        `<strong>Genre:</strong> ${d.data.name}<br>
+         <strong>Count:</strong> ${d.value}`
+      );
+    else
+      tooltip.html(
+        `<strong>Source:</strong> ${d.data.name}<br>
+        <strong>Count:</strong> ${d.value}`
+      );
+
+    tooltip
+      .style("visibility", "visible")
+      .style("top", `${event.pageY - 30}px`)
+      .style("left", `${event.pageX + 10}px`);
+}
+
+function mouseLeaveSunburst(event, d) {
+  d3.select(this).style("stroke-width", "1px");
+
+  tooltip.style("visibility", "hidden");
+  d3.select(this)
+    .style("stroke-width", "1px")
+    .attr("r", 3);
+}
+
 
 // Update functions
 function updateScatterPlot(data) {
