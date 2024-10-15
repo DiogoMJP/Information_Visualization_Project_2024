@@ -7,7 +7,6 @@ data = data.drop('synopsis', axis=1)
 data = data.drop('main_pic', axis=1)
 data = data.drop(data[data.type != "TV"].index)
 data = data.drop('type', axis=1)
-data = data.drop('num_episodes', axis=1)
 data = data.drop('status', axis=1)
 data = data.drop('start_date', axis=1)
 data = data.drop('end_date', axis=1)
@@ -31,7 +30,7 @@ data = data.drop('pics', axis=1)
 
 data = data.dropna()
 
-data['year'] = data['season'].apply(lambda season: season.split(" ")[1])
+data['year'] = data['season'].apply(lambda season: season.split(" ")[1].capitalize())
 data['season'] = data['season'].apply(lambda season: season.split(" ")[0])
 data = data[data.year != 'None']
 data['year'] = data['year'].apply(lambda year: int(year))
