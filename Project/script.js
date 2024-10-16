@@ -519,6 +519,11 @@ function buildTree(data) {
     });
   });
 
+  if (tree.children.length == 0) {
+    emptyNode = { name: "empty", children: [{ name: "empty", value: 1 }] };
+    tree.children.push(emptyNode);
+  }
+
   return tree;
 }
 
@@ -832,21 +837,26 @@ function mouseOverSunburst(event, d) {
     .style("cursor", "pointer")
     .style("stroke-width", "3px")
     .attr("r", 6);
-    if (d.depth == 1)
-      tooltip.html(
-        `<strong>Genre:</strong> ${d.data.name}<br>
-         <strong>Count:</strong> ${d.value}`
-      );
-    else
-      tooltip.html(
-        `<strong>Source:</strong> ${d.data.name}<br>
-        <strong>Count:</strong> ${d.value}`
-      );
 
-    tooltip
-      .style("visibility", "visible")
-      .style("top", `${event.pageY - 30}px`)
-      .style("left", `${event.pageX + 10}px`);
+  if (d.data.name == "empty")
+    tooltip.html(
+      `No anime selected`
+    );
+  else if (d.depth == 1)
+    tooltip.html(
+      `<strong>Genre:</strong> ${d.data.name}<br>
+        <strong>Count:</strong> ${d.value}`
+    );
+  else
+    tooltip.html(
+      `<strong>Source:</strong> ${d.data.name}<br>
+      <strong>Count:</strong> ${d.value}`
+    );
+
+  tooltip
+    .style("visibility", "visible")
+    .style("top", `${event.pageY - 30}px`)
+    .style("left", `${event.pageX + 10}px`);
 }
 
 function mouseLeaveSunburst(event, d) {
@@ -1142,9 +1152,11 @@ function updateSunburst() {
 
   pathsEnter.merge(paths)
     .style("fill", function (d) {
-      if (d.depth === 0)
+      if (d.data.name === "empty")
+        return "gray";
+      else if (d.depth === 0)
         return "none";
-      if (d.depth === 1 && (genre == null || d.data.name === genre))
+      else if (d.depth === 1 && (genre == null || d.data.name === genre))
         return "steelblue";
       else if (d.depth === 2 && (source == null || (d.data.name === source)) && (d.parent.data.name === genre || genre == null))
         return "lightblue";
