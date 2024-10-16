@@ -1,6 +1,7 @@
 var globalData;
 var selectedData = [];
 var individualSelectedData = [];
+var sunburstData = [];
 
 var bin = null;
 var prev_bin = null;
@@ -46,6 +47,7 @@ function init() {
   d3.json("data.json").then(function (data) {
     globalData = data;
     selectedData = data;
+    sunburstData = data;
     createAnimeList();
     createGenreFilter();
     createSourceFilter();
@@ -454,7 +456,8 @@ function createSunburst() {
     })
     .style("stroke", "black")
     .on("mouseover", mouseOverSunburst)
-    .on("mouseleave", mouseLeaveSunburst);
+    .on("mouseleave", mouseLeaveSunburst)
+    .on("click", clickPath);
 
     svg
     .append("rect")
@@ -526,9 +529,6 @@ function clickAnime(id) {
   updateDueToIndividualSelection = true;
 
   updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
 }
 
 function clickSeason(name) {
@@ -548,9 +548,6 @@ function clickSeason(name) {
 
   // Update data and visuals
   updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
 }
 
 function clickGenre() {
@@ -563,9 +560,6 @@ function clickGenre() {
   
   // Update data and visuals
   updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
 }
 
 function clickSource() {
@@ -576,23 +570,12 @@ function clickSource() {
   if (source == "none")
     source = null;
   
-  // Update data and visuals
   updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
 }
 
 function resetIndividualSelection() {
   individualSelectedData = [];
   updateData();
-  
-  // Use setTimeout to ensure the DOM updates after data reset
-  setTimeout(() => {
-    createAnimeList();
-    updateHistogram(globalData);
-    updateScatterPlot(globalData);
-  }, 0);
 }
 
 function resetScatterPlotZoom() {
@@ -605,9 +588,6 @@ function clickCircle(event, d) {
   updateDueToIndividualSelection = true;
 
   updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
 }
 
 function brushCircle(d) {
@@ -618,9 +598,6 @@ function brushCircle(d) {
   updateDueToIndividualSelection = true;
 
   updateData();
-  createAnimeList();
-  updateHistogram(globalData);
-  updateScatterPlot(globalData);
 }
 
 function clickBin(event, d) {
@@ -632,9 +609,41 @@ function clickBin(event, d) {
     bin = d.x0
 
   updateData();
-  createAnimeList();
-  updateScatterPlot(globalData);
-  updateHistogram(globalData);
+}
+
+function clickPath(event, d) {
+  genre_filter = document.getElementById("genre_select");
+  if (d.depth == 1) {
+    prev_genre = genre;
+    if (d.data.name == genre) {
+      genre = null;
+      genre_filter.value = "none";
+    }
+    else {
+      genre = d.data.name;
+      genre_filter.value = genre;
+    }
+  }
+  else if (d.depth == 2) {
+    source_filter = document.getElementById("source_select");
+    prev_source = source;
+    prev_genre = genre;
+    if (d.data.name == source && d.parent.data.name == genre) {
+      genre = null;
+      genre_filter.value = "none";
+      source = null;
+      source_filter.value = "none";
+    }
+    else {
+      source = d.data.name;
+      source_filter.value = source;
+      genre = d.parent.data.name;
+      genre_filter.value = genre;
+    }
+  }
+  
+  // Update data and visuals
+  updateData();
 }
 
 function updateData() {
@@ -688,6 +697,8 @@ function updateData() {
     selectionActive = true;
   }
 
+  sunburstData = selectedData;
+
   if (genre != null) {
     selectedData = selectedData.filter(function (elem) {
       return elem.genres.includes(genre);
@@ -738,6 +749,14 @@ function updateData() {
   else
     changed_bin = false;
   prev_bin = bin;
+
+  // Use setTimeout to ensure the DOM updates after data reset
+  setTimeout(() => {
+    createAnimeList();
+    updateHistogram(globalData);
+    updateScatterPlot(globalData);
+    updateSunburst();
+  }, 0);
 }
 
 function mouseOverScatterPlot(event, d) {
@@ -1061,6 +1080,83 @@ function updateHistogram(data) {
     .attr("height", d => svgHeight - yScale(d.length) - margin)
     .style("fill", season == null ? "steelblue" : colorScale(season))
     .style("stroke", "black");
+}
+
+function updateSunburst() {
+  if (individualSelectionActive)
+    treeData = buildTree(individualSelectedData);
+  else
+    treeData = buildTree(sunburstData);
+
+  // Core sunburst
+  const svgWidth = d3.select("#Sunburst").node().clientWidth;
+  const svgHeight = d3.select("#Sunburst").node().clientHeight;
+  const margin = 10;
+
+  const radius = Math.min(svgWidth - margin, svgHeight - margin) / 2;
+
+  const partition = d3.partition().size([2 * Math.PI, radius]);
+
+  const arc = d3
+  .arc()
+  .startAngle(d => d.x0)
+  .endAngle(d => d.x1)
+  .innerRadius(function (d) {
+    switch (d.depth) {
+      case 0:
+        return d.y0 * 0.4;
+      case 1:
+        return d.y0 * 0.5;
+      case 2:
+        return d.y0;
+      default:
+        return d.y0;
+    }
+  })
+  .outerRadius(d => d.y1);
+
+  const svg = d3
+    .select("#Sunburst")
+    .select("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
+
+  const root = d3
+    .hierarchy(treeData)
+    .sum(function (d) {
+      return d.value;
+    })
+    .sort(function (a, b) {
+      return b.value - a.value;
+    });
+
+  const nodes = partition(root).descendants();
+
+  const paths = svg.select("g").selectAll("path").data(nodes);
+  
+  paths.exit().remove();
+  
+  const pathsEnter = paths.enter()
+    .append("path")
+    .attr("d", arc);
+
+  pathsEnter.merge(paths)
+    .style("fill", function (d) {
+      if (d.depth === 0)
+        return "none";
+      if (d.depth === 1 && (genre == null || d.data.name === genre))
+        return "steelblue";
+      else if (d.depth === 2 && (source == null || (d.data.name === source)) && (d.parent.data.name === genre || genre == null))
+        return "lightblue";
+      else {
+        return "gray";
+      }
+    })
+    .style("stroke", "black")
+    .on("mouseover", mouseOverSunburst)
+    .on("mouseleave", mouseLeaveSunburst)
+    .on("click", clickPath)
+    .attr("d", arc);
 }
 
 function zoomed(event) {
