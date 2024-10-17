@@ -495,7 +495,7 @@ function createSunburst() {
 }
 
 function buildTree(data) {
-  const tree = { name: "Total", children: [] };
+  tree = { name: "Total", children: [] };
 
   data.forEach((item) => {
     const { genres, source_type } = item;
@@ -517,7 +517,8 @@ function buildTree(data) {
     });
   });
 
-  if (tree.children.length == 0) {
+  if (tree.children.length == 0 || selectedData == 0) {
+    tree = { name: "Total", children: [] };
     emptyNode = { name: "empty", children: [{ name: "empty", value: 1 }] };
     tree.children.push(emptyNode);
   }
