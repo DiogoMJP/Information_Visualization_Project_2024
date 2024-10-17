@@ -33,14 +33,7 @@ mouse_down = false
 const tooltip = d3
     .select("body")
     .append("div")
-    .style("position", "absolute")
-    .style("background", "#fff")
-    .style("padding", "5px 10px")
-    .style("border", "1px solid #ccc")
-    .style("border-radius", "5px")
-    .style("visibility", "hidden")
-    .style("text-align", "left")
-    .style("color", "steelblue");
+    .attr("class", "tooltip");
 
 // Initialization of the dashboard
 function init() {
@@ -60,8 +53,7 @@ function init() {
 function createAnimeList() {
   input = document.getElementById('search_box');
   filter = input.value.toUpperCase();
-  anime_list = document.getElementById("anime_list")
-  anime_list.innerHTML = "";
+  anime_list = d3.select("#anime_list");
 
   var animeListSelectedData, individualAnimeListSelectedData;
   if (filter != "") {
@@ -83,20 +75,26 @@ function createAnimeList() {
     .domain([d3.min(selectedData, d => d.num_episodes), d3.max(selectedData, d => d.num_episodes)])
     .range(["white", "steelblue"]);
 
-  for (anime of animeListSelectedData) {
-    let anime_list_element = document.createElement("div")
-    anime_list_element.setAttribute("class", "anime_list_element unclicked");
-    anime_list_element.setAttribute("id", anime.anime_id);
-    anime_list_element.setAttribute("onclick", "clickAnime("+anime.anime_id+");")
-    anime_list_element.style.backgroundColor = colorScale(anime.num_episodes);
-    anime_list_element.innerText += anime.title;
-    anime_list.append(anime_list_element);
-  }
+  anime_list
+    .selectAll("div")
+    .remove();
 
-  for (anime of individualAnimeListSelectedData) {
-    let anime_list_element = document.getElementById(anime.anime_id)
-    anime_list_element.setAttribute("class", "anime_list_element clicked");
-  }
+  anime_list
+    .selectAll("div")
+    .data(animeListSelectedData, (d) => d.title)
+    .enter()
+    .append("div")
+    .text((d) => d.title)
+    .attr("class", "anime_list_element unclicked")
+    .style("background-color", function(d) { return colorScale(d.num_episodes); })
+    .on("click", clickAnime)
+    .on("mouseover", mouseOverAnime)
+    .on("mouseleave", mouseLeaveAnime);
+  
+  anime_list
+    .selectAll("div")
+    .filter((d) => individualAnimeListSelectedData.includes(d))
+    .attr("class", "anime_list_element clicked");
 }
 
 function createGenreFilter() {
@@ -528,12 +526,55 @@ function buildTree(data) {
 }
 
 // Interaction managers
-function clickAnime(id) {
+function clickAnime(event, d) {
   //if all points are selected, it means its the first selection so make that the only selected point
-  clicked_anime_id = id;
+  clicked_anime_id = d.anime_id;
   updateDueToIndividualSelection = true;
 
   updateData();
+}
+
+function mouseOverAnime(event, d) {
+  d3
+    .select("#ScatterPlot")
+    .selectAll("circle")
+    .filter((data) => data.anime_id == d.anime_id)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 6);
+
+    tooltip
+    .style("visibility", "visible")
+    .html(
+      `<strong>Title:</strong> ${d.title}<br>
+        <strong>Score:</strong> ${d.score}<br>
+        <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Season:</strong> ${d.season}<br>
+        <strong>Number of Episodes:</strong> ${d.num_episodes}<br>
+        <strong>Source Type:</strong> ${d.source_type}<br>
+        <strong>Genres:</strong> ${d.genres}`
+    )
+
+  const tooltipWidth = parseInt(tooltip.style("width"), 10);
+  const tooltipHeight = parseInt(tooltip.style("height"), 10);
+  let top = event.pageY;
+
+  tooltip
+    .style("top", `${top}px`)
+    .style("left", `16%`);
+
+  if (mouse_down)
+    brushCircle(d);
+}
+
+function mouseLeaveAnime(event, d) {
+  tooltip.style("visibility", "hidden");
+  d3
+    .select("#ScatterPlot")
+    .selectAll("circle")
+    .filter((data) => data.anime_id == d.anime_id)
+    .style("stroke-width", "1px")
+    .attr("r", 3);
 }
 
 function clickSeason(name) {
@@ -762,6 +803,45 @@ function updateData() {
     updateScatterPlot(globalData);
     updateSunburst();
   }, 0);
+}
+
+function mouseOverScatterPlot(event, d) {
+  d3.select(this)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 6);
+
+    tooltip
+    .style("visibility", "visible")
+    .html(
+      `<strong>Title:</strong> ${d.title}<br>
+        <strong>Score:</strong> ${d.score}<br>
+        <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Season:</strong> ${d.season}`
+    )
+
+  const tooltipWidth = parseInt(tooltip.style("width"), 10);
+  const tooltipHeight = parseInt(tooltip.style("height"), 10);
+  let top = event.pageY - tooltipHeight - 10;
+  let left = event.pageX + 10;
+
+  if (left + tooltipWidth > window.innerWidth) {
+    left = event.pageX - tooltipWidth - 30; //position to the left of the mouse if there's not enough space to the right
+  }
+
+  tooltip
+    .style("top", `${top}px`)
+    .style("left", `${left}px`);
+
+  if (mouse_down)
+    brushCircle(d);
+}
+
+function mouseLeaveScatterPlot(event, d) {
+  tooltip.style("visibility", "hidden");
+  d3.select(this)
+    .style("stroke-width", "1px")
+    .attr("r", 3);
 }
 
 function mouseOverScatterPlot(event, d) {
