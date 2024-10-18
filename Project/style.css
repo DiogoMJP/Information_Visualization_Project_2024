@@ -72,9 +72,29 @@
   height: 42%;
   position: relative;
   overflow-y: scroll;
-  border-style: none none solid none;
+}
+#anime_list_scale {
+  width: 100%;
+  height: 5%;
+  position: relative;
+  background-image: linear-gradient(to right, white , steelblue);
+  border-style: solid none solid none;
   border-width: 2px;
   border-color: grey;
+}
+#anime_list_scale_left {
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: left;
+}
+#anime_list_scale_right {
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: right;
 }
 .anime_list_element {
   width: 90%;

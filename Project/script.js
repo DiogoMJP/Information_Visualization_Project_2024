@@ -95,6 +95,11 @@ function createAnimeList() {
     .selectAll("div")
     .filter((d) => individualAnimeListSelectedData.includes(d))
     .attr("class", "anime_list_element clicked");
+  
+  document.getElementById("anime_list_scale_left")
+    .textContent = d3.min(selectedData, d => d.num_episodes);
+  document.getElementById("anime_list_scale_right")
+    .textContent = d3.max(selectedData, d => d.num_episodes);
 }
 
 function createGenreFilter() {
