@@ -428,7 +428,10 @@ function createSunburst() {
       return Math.max(d.value, 20);
     })
     .sort(function (a, b) {
-      return b.value - a.value;
+      if (a.depth == 1)
+        return b.data.sum - a.data.sum;
+      else
+        return b.data.value - a.data.value;
     });
 
   const nodes = partition(root).descendants();
@@ -1277,7 +1280,10 @@ function updateSunburst() {
       return Math.max(d.value, 20);
     })
     .sort(function (a, b) {
-      return b.value - a.value;
+      if (a.depth == 1)
+        return b.data.sum - a.data.sum;
+      else
+        return b.data.value - a.data.value;
     });
 
   const nodes = partition(root).descendants();
