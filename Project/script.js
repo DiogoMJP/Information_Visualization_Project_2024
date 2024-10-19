@@ -425,7 +425,7 @@ function createSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return d.value;
+      return Math.max(d.value, 20);
     })
     .sort(function (a, b) {
       return b.value - a.value;
@@ -457,6 +457,7 @@ function createSunburst() {
       }
       return "steelblue";
     })
+    .style("stroke-width", "0.5px")
     .style("stroke", "black")
     .on("mouseover", mouseOverSunburst)
     .on("mouseleave", mouseLeaveSunburst)
@@ -501,6 +502,28 @@ function createSunburst() {
     .text("Genre")
     .style("font-size", "12px")
     .style("fill", "white");
+   
+  const zoomSunburst = d3.zoom()
+  .scaleExtent([1, 5]) // Zoom scale limits
+  .extent([[0, 0], [svgWidth, svgHeight]]) 
+  .translateExtent([[0, 0], [svgWidth, svgHeight]])
+  .filter(function(event) {
+    return event.type === 'wheel';
+  })
+  .on("zoom", function (event) {
+    const { transform } = event; // Get current zoom transformation
+    const [mouseX, mouseY] = d3.pointer(event, svg.node());
+
+    // Adjust the new translation values by combining the zoom transform with the initial centering
+    const translateX = (svgWidth / 2) * transform.k + transform.x;
+    const translateY = (svgHeight / 2) * transform.k + transform.y;
+
+    // Apply both the zoom and the initial center transform
+    g.attr("transform", `translate(${translateX}, ${translateY}) scale(${transform.k})`);
+  });
+
+  // Apply zoom only to the sunburst SVG, not other elements
+  svg.call(zoomSunburst);
 }
 
 function buildTree(data) {
@@ -512,7 +535,7 @@ function buildTree(data) {
      genres.forEach((genre) => {
       let genreNode = tree.children.find((node) => node.name === genre);
       if (!genreNode) {
-        genreNode = { name: genre, children: [] };
+        genreNode = { name: genre, children: [], sum: 0 };
         tree.children.push(genreNode);
       }
 
@@ -523,6 +546,7 @@ function buildTree(data) {
       } else {
         sourceNode.value += 1;
       }
+      genreNode.sum += 1;
     });
   });
 
@@ -691,6 +715,8 @@ function clickPath(event, d) {
     if (d.data.name == source && d.parent.data.name == genre) {
       genre = null;
       genre_filter.value = "none";
+    }
+    else if (d.data.name == source && genre == null) {
       source = null;
       source_filter.value = "none";
     }
@@ -925,12 +951,11 @@ function mouseLeaveHistogram(event, d) {
 }
 
 function mouseOverSunburst(event, d) {
-  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px").raise();
-
   d3.select(this)
     .style("cursor", "pointer")
-    .style("stroke-width", "3px")
-    .attr("r", 6);
+    .style("stroke-width", "2px")
+    .attr("r", 6)
+    .raise();
 
   if (d.data.name == "empty")
     tooltip.html(
@@ -939,12 +964,12 @@ function mouseOverSunburst(event, d) {
   else if (d.depth == 1)
     tooltip.html(
       `<strong>Genre:</strong> ${d.data.name}<br>
-        <strong>Count:</strong> ${d.value}`
+        <strong>Count:</strong> ${d.data.sum}`
     );
   else
     tooltip.html(
       `<strong>Source:</strong> ${d.data.name}<br>
-      <strong>Count:</strong> ${d.value}`
+      <strong>Count:</strong> ${d.data.value}`
     );
 
   tooltip
@@ -954,11 +979,9 @@ function mouseOverSunburst(event, d) {
 }
 
 function mouseLeaveSunburst(event, d) {
-  d3.select(this).style("stroke-width", "1px");
-
   tooltip.style("visibility", "hidden");
   d3.select(this)
-    .style("stroke-width", "1px")
+    .style("stroke-width", "0.5px")
     .attr("r", 3);
 }
 
@@ -1228,7 +1251,7 @@ function updateSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return d.value;
+      return Math.max(d.value, 20);
     })
     .sort(function (a, b) {
       return b.value - a.value;
@@ -1276,6 +1299,7 @@ function updateSunburst() {
       }
     })
     .style("stroke", "black")
+    .style("stroke-width", "0.5px")
     .on("mouseover", mouseOverSunburst)
     .on("mouseleave", mouseLeaveSunburst)
     .on("click", clickPath)
