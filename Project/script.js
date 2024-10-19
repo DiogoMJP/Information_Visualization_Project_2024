@@ -425,7 +425,10 @@ function createSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return Math.max(d.value, 5);
+      if ((!individualSelectionActive && sunburstData.length > 200) || (individualSelectionActive && individualSelectedData.length > 200))
+        return Math.max(d.value, 5);
+      else
+        return d.value;
     })
     .sort(function (a, b) {
       if (a.depth == 1)
@@ -1296,7 +1299,10 @@ function updateSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return Math.max(d.value, 5);
+      if ((!individualSelectionActive && sunburstData.length > 200) || (individualSelectionActive && individualSelectedData.length > 200))
+        return Math.max(d.value, 5);
+      else
+        return d.value;
     })
     .sort(function (a, b) {
       if (a.depth == 1)
