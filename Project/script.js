@@ -625,6 +625,29 @@ function clickSource() {
   updateData();
 }
 
+function resetFilters() {
+  prev_bin = bin;
+  prev_season = season;
+  prev_genre = genre;
+  prev_source = source;
+
+  bin = null;
+  season = null;
+  genre = null;
+  source = null;
+
+  individualSelectedData = [];
+
+  document.querySelectorAll('.season_button').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+
+  document.getElementById("genre_select").value = "none";
+  document.getElementById("source_select").value = "none";
+  
+  updateData();
+}
+
 function resetIndividualSelection() {
   individualSelectedData = [];
   updateData();

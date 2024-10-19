@@ -89,6 +89,13 @@
   transform: translateY(-50%);
   text-align: left;
 }
+#anime_list_scale_label {
+  width: 100%;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  text-align: center;
+}
 #anime_list_scale_right {
   width: 100%;
   position: absolute;
