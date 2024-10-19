@@ -464,6 +464,7 @@ function createSunburst() {
 
     svg
     .append("rect")
+    .attr("class", "source")
     .attr("x", svgWidth - 90)
     .attr("y", 50)
     .attr("width", 60)
@@ -473,6 +474,7 @@ function createSunburst() {
   
   svg
     .append("text")
+    .attr("class", "source")
     .attr("x", svgWidth - 60)
     .attr("y", 65)
     .attr("text-anchor", "middle")
@@ -482,6 +484,7 @@ function createSunburst() {
   
   svg
     .append("rect")
+    .attr("class", "genre")
     .attr("x", svgWidth - 90)
     .attr("y", 25)
     .attr("width", 60)
@@ -491,6 +494,7 @@ function createSunburst() {
   
   svg
     .append("text")
+    .attr("class", "genre")
     .attr("x", svgWidth - 60)
     .attr("y", 40)
     .attr("text-anchor", "middle")
@@ -1240,6 +1244,23 @@ function updateSunburst() {
     .append("path")
     .attr("d", arc);
 
+  colorPalette = ["steelblue", "lightblue", "White", "Black"];
+
+  switch (season) {
+    case "Spring":
+      colorPalette = ["LimeGreen", "PaleGreen", "Black", "Black"];
+      break;
+    case "Summer":
+      colorPalette = ["Gold", "LemonChiffon", "Black", "Black"];
+      break;
+    case "Fall":
+      colorPalette = ["DarkOrange", "PeachPuff", "Black", "Black"];
+      break;
+    case "Winter":
+      colorPalette = ["Purple", "Plum", "White", "Black"];
+      break;
+  }
+
   pathsEnter.merge(paths)
     .style("fill", function (d) {
       if (d.data.name === "empty")
@@ -1247,9 +1268,9 @@ function updateSunburst() {
       else if (d.depth === 0)
         return "none";
       else if (d.depth === 1 && (individualSelectionActive || (genre == null || d.data.name === genre)))
-        return "steelblue";
+        return colorPalette[0];
       else if (d.depth === 2 && (individualSelectionActive || (source == null || (d.data.name === source)) && (d.parent.data.name === genre || genre == null)))
-        return "lightblue";
+        return colorPalette[1];
       else {
         return "gray";
       }
@@ -1259,6 +1280,11 @@ function updateSunburst() {
     .on("mouseleave", mouseLeaveSunburst)
     .on("click", clickPath)
     .attr("d", arc);
+
+  svg.select("rect.genre").style("fill", colorPalette[0]);
+  svg.select("rect.source").style("fill", colorPalette[1]);
+  svg.select("text.genre").style("fill", colorPalette[2]);
+  svg.select("text.source").style("fill", colorPalette[3]);
 }
 
 function zoomed(event) {
