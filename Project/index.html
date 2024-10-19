@@ -20,7 +20,7 @@
         </div>
         <div id="anime_list"></div>
         <div id="anime_list_scale">
-          <div id="anime_list_scale_left"></div><div id="anime_list_scale_right"></div>
+          <div id="anime_list_scale_left"></div><div id="anime_list_scale_label"><b>Number of Episodes</b></div><div id="anime_list_scale_right"></div>
         </div>
         <div id='season_filter'>
           Seasons
@@ -46,15 +46,18 @@
           </div>
         </div>
         <div id='genre_filter'>
-          Genre
+          Genre<br>
           <select name="genre_select" id="genre_select" onchange="clickGenre()"></select>
         </div>
         <div id='source_filter'>
-          Source
+          Source<br>
           <select name="source_select" id="source_select" onchange="clickSource()"></select>
         </div>
+        <button class="scatter_plot_button" id="filter_reset_button" onclick="resetFilters()">Reset All Filters</button>
       </div>
-      <div id="ScentedPlot">ScentedPlot</div>
+      <div id="ScentedPlot">
+        <img src="scented_widget.png" style="width: 100%;">
+      </div>
       <div class="graph_container" id="Sunburst"></div>
       <div class="graph_container" id="Histogram"></div>
       <div class="graph_container" id="ScatterPlot">
