@@ -1359,11 +1359,12 @@ function updateSunburst() {
     .on("click", clickPath)
     .attr("d", arc);
 
+  totalSelected = individualSelectionActive ? individualSelectedData.length : selectedData.length;
   svg.select("rect.genre").style("fill", colorPalette[0]);
   svg.select("rect.source").style("fill", colorPalette[1]);
   svg.select("text.genre").style("fill", colorPalette[2]);
   svg.select("text.source").style("fill", colorPalette[3]);
-  svg.select("text.total").text(`Total anime selected: ${selectedData.length}`);
+  svg.select("text.total").text(`Total anime selected: ${totalSelected}`);
 }
 
 function zoomed(event) {
