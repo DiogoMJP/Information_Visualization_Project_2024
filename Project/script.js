@@ -1344,9 +1344,9 @@ function updateSunburst() {
         return "gray";
       else if (d.depth === 0)
         return "none";
-      else if (d.depth === 1 && (individualSelectionActive || (genre == null || d.data.name === genre)))
+      else if (d.depth === 1 && (genre == null || d.data.name === genre))
         return colorPalette[0];
-      else if (d.depth === 2 && (individualSelectionActive || (source == null || (d.data.name === source)) && (d.parent.data.name === genre || genre == null)))
+      else if (d.depth === 2 && (source == null || (d.data.name === source)) && (d.parent.data.name === genre || genre == null))
         return colorPalette[1];
       else {
         return "gray";
