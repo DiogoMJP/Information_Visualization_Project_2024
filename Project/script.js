@@ -425,7 +425,7 @@ function createSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return Math.max(d.value, 20);
+      return Math.max(d.value, 5);
     })
     .sort(function (a, b) {
       if (a.depth == 1)
@@ -466,7 +466,11 @@ function createSunburst() {
     .on("mouseleave", mouseLeaveSunburst)
     .on("click", clickPath);
 
-    svg
+  // Create a new <g> for labels and rectangles
+  const labelGroup = g.append("g").attr("transform", `translate(${-svgWidth / 2}, ${-svgHeight / 2})`);
+
+  // Source Rectangle and Text
+  labelGroup
     .append("rect")
     .attr("class", "source")
     .attr("x", svgWidth - 90)
@@ -475,8 +479,8 @@ function createSunburst() {
     .attr("height", 20)
     .style("fill", "lightblue")
     .style("stroke", "black");
-  
-  svg
+
+  labelGroup
     .append("text")
     .attr("class", "source")
     .attr("x", svgWidth - 60)
@@ -485,8 +489,9 @@ function createSunburst() {
     .text("Source")
     .style("font-size", "12px")
     .style("fill", "black");
-  
-  svg
+
+  // Genre Rectangle and Text
+  labelGroup
     .append("rect")
     .attr("class", "genre")
     .attr("x", svgWidth - 90)
@@ -495,8 +500,8 @@ function createSunburst() {
     .attr("height", 20)
     .style("fill", "steelblue")
     .style("stroke", "black");
-  
-  svg
+
+  labelGroup
     .append("text")
     .attr("class", "genre")
     .attr("x", svgWidth - 60)
@@ -505,13 +510,26 @@ function createSunburst() {
     .text("Genre")
     .style("font-size", "12px")
     .style("fill", "white");
+
+  
+  // Total Selected Anime Text
+  labelGroup
+    .append("text")
+    .attr("class", "total")
+    .attr("x", margin + 10)
+    .attr("y", 40)
+    .attr("text-anchor", "start")
+    .text(`Total anime selected: ${selectedData.length}`)
+    .style("font-size", "12px")
+    .style("fill", "steelblue");
    
   const zoomSunburst = d3.zoom()
   .scaleExtent([1, 5]) // Zoom scale limits
   .extent([[0, 0], [svgWidth, svgHeight]]) 
   .translateExtent([[0, 0], [svgWidth, svgHeight]])
   .filter(function(event) {
-    return event.type === 'wheel';
+    // Only allow drag (pan) actions, ignore double-click and wheel events for zooming
+    return event.type !== 'dblclick';
   })
   .on("zoom", function (event) {
     const { transform } = event; // Get current zoom transformation
@@ -979,7 +997,7 @@ function mouseLeaveHistogram(event, d) {
 function mouseOverSunburst(event, d) {
   d3.select(this)
     .style("cursor", "pointer")
-    .style("stroke-width", "2px")
+    .style("stroke-width", "1.6px")
     .attr("r", 6)
     .raise();
 
@@ -994,7 +1012,8 @@ function mouseOverSunburst(event, d) {
     );
   else
     tooltip.html(
-      `<strong>Source:</strong> ${d.data.name}<br>
+     `<strong>Genre:</strong> ${d.parent.data.name}<br>
+      <strong>Source:</strong> ${d.data.name}<br>
       <strong>Count:</strong> ${d.data.value}`
     );
 
@@ -1277,7 +1296,7 @@ function updateSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return Math.max(d.value, 20);
+      return Math.max(d.value, 5);
     })
     .sort(function (a, b) {
       if (a.depth == 1)
@@ -1338,6 +1357,7 @@ function updateSunburst() {
   svg.select("rect.source").style("fill", colorPalette[1]);
   svg.select("text.genre").style("fill", colorPalette[2]);
   svg.select("text.source").style("fill", colorPalette[3]);
+  svg.select("text.total").text(`Total anime selected: ${selectedData.length}`);
 }
 
 function zoomed(event) {
