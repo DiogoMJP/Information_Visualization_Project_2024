@@ -226,7 +226,6 @@
 }
 #popularity_buttons_container {
   width: 60%;
-  height: 12%;
   display: grid;
   grid-template-columns: auto auto auto;
   gap: 2px;
@@ -246,22 +245,29 @@
 }
 #score_filter {
   width: 100%;
-  margin: 2%;
+  margin-top: 10px;
   text-align: center;
 }
 #genre_filter {
   width: 100%;
-  height: 8%;
+  text-align: center;
+  margin-top: 10px;
 }
 #genre_select {
   cursor: pointer;
 }
 #source_filter {
   width: 100%;
-  height: 8%;
+  text-align: center;
+  margin-top: 10px;
 }
 #source_select {
   cursor: pointer;
+}
+#filter_reset_button {
+  font-size: 16px;
+  margin:25px auto;
+  display:block;
 }
 #ScentedPlot {
   background-color: rgba(255, 255, 255, 0.8);
