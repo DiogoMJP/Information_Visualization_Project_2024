@@ -97,9 +97,9 @@ function createAnimeList() {
     .attr("class", "anime_list_element clicked");
   
   document.getElementById("anime_list_scale_left")
-    .textContent = d3.min(selectedData, d => d.num_episodes);
+    .textContent = "\u00A0\u00A0" + d3.min(selectedData, d => d.num_episodes);
   document.getElementById("anime_list_scale_right")
-    .textContent = d3.max(selectedData, d => d.num_episodes);
+    .textContent = d3.max(selectedData, d => d.num_episodes) + "\u00A0\u00A0";
 }
 
 function createGenreFilter() {
@@ -254,11 +254,11 @@ function createScatterPlot(data) {
     .attr('fill', 'none');
   svg
     .append("text")
-    .attr("x", svgWidth - margin)
+    .attr("x", svgWidth - margin - 10)
     .attr("y", svgHeight - 25)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
-    .text("log-Popularity");
+    .text("Popularity");
   svg
     .append("text")
     .attr("x", margin)
