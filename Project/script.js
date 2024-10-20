@@ -675,7 +675,9 @@ function changeScore() {
   score_min_input.setAttribute("max", new_score_max - 0.5);
   score_max_input.setAttribute("min", new_score_min + 0.5);
   score_min_input.value = new_score_min;
+  score_min_input.setAttribute("value", new_score_min);
   score_max_input.value = new_score_max;
+  score_max_input.setAttribute("value", new_score_max);
 
   prev_score_min = score_min;
   score_min = new_score_min;
@@ -776,10 +778,20 @@ function clickBin(event, d) {
 
   score_min_input = document.getElementById("score_min");
   score_max_input = document.getElementById("score_max");
-  if (score_min == null) score_min_input.value = 3;
-  else score_min_input.value = score_min;
-  if (score_max == null) score_max_input.value = 9.5;
-  else score_max_input.value = score_max;
+  if (score_min == null) {
+    score_min_input.value = 3;
+    score_min_input.setAttribute("value", 3);
+  } else {
+    score_min_input.value = score_min;
+    score_min_input.setAttribute("value", score_min);
+  }
+  if (score_max == null) {
+    score_max_input.value = 9.5;
+    score_max_input.setAttribute("value", 9.5);
+  } else {
+    score_max_input.value = score_max;
+    score_max_input.setAttribute("value", score_max);
+  }
   
   updateData();
 }
