@@ -220,24 +220,15 @@
 }
 #popularity_filter {
   width: 100%;
-  margin: 2% 0;
+  margin-top: 10px;
   text-align: center;
 }
-#popularity_buttons_container {
-  width: 60%;
+#popularity_input_container {
+  width: 40%;
   display: grid;
-  grid-template-columns: auto auto auto;
+  grid-template-columns: auto auto;
   gap: 2px;
   margin: auto;
-}
-.popularity_button {
-  height: fit-content;
-  padding: 2px;
-  text-align: center;
-  background-color: aliceblue;
-  border-style: solid;
-  border-width: 1px;
-  border-color: lightblue;
 }
 .popularity_button:hover {
   background-color: cornflowerblue;
@@ -246,6 +237,13 @@
   width: 100%;
   margin-top: 10px;
   text-align: center;
+}
+#score_input_container {
+  width: 40%;
+  display: grid;
+  grid-template-columns: auto auto;
+  gap: 2px;
+  margin: auto;
 }
 #genre_filter {
   width: 100%;

@@ -3,9 +3,11 @@ var selectedData = [];
 var individualSelectedData = [];
 var sunburstData = [];
 
-var bin = null;
-var prev_bin = null;
-var changed_bin = false;
+var score_min = null;
+var prev_score_min = null;
+var score_max = null;
+var prev_score_max = null;
+var changed_score = false;
 var season = null;
 var prev_season = null;
 var changed_season = false;
@@ -654,6 +656,36 @@ function clickSeason(name) {
   updateData();
 }
 
+function changeScore() {
+  score_min_input = document.getElementById("score_min");
+  let new_score_min = parseFloat(score_min_input.value);
+  score_max_input = document.getElementById("score_max");
+  let new_score_max = parseFloat(score_max_input.value);
+
+  if (new_score_min > parseFloat(score_min_input.max))
+    new_score_min = parseFloat(score_min_input.max);
+  else if (new_score_min < 3)
+    new_score_min = 3;
+
+  if (new_score_max > 9.5)
+    new_score_max = 9.5;
+  else if (new_score_max < parseFloat(score_max_input.min))
+    new_score_max = parseFloat(score_max_input.min);
+
+  score_min_input.setAttribute("max", new_score_max - 0.5);
+  score_max_input.setAttribute("min", new_score_min + 0.5);
+  score_min_input.value = new_score_min;
+  score_max_input.value = new_score_max;
+
+  prev_score_min = score_min;
+  score_min = new_score_min;
+  prev_score_max = score_max;
+  score_max = new_score_max;
+
+  // Update data and visuals
+  updateData();
+}
+
 function clickGenre() {
   prev_genre = genre;
   genre_filter = document.getElementById("genre_select");
@@ -678,12 +710,14 @@ function clickSource() {
 }
 
 function resetFilters() {
-  prev_bin = bin;
+  prev_score_min = score_min;
+  prev_score_max = score_max;
   prev_season = season;
   prev_genre = genre;
   prev_source = source;
 
-  bin = null;
+  score_min = null;
+  score_max = null;
   season = null;
   genre = null;
   source = null;
@@ -729,12 +763,24 @@ function brushCircle(d) {
 
 function clickBin(event, d) {
   // select a bin if none was selected; else, select none
-  prev_bin = bin;
-  if (bin == d.x0) 
-    bin = bin != null ? null : d.x0;
-  else
-    bin = d.x0
+  prev_score_min = score_min;
+  prev_score_max = score_max;
+  if ((score_min == d.x0) && (score_max == d.x0 + 0.5)) {
+    score_min = score_min != null ? null : d.x0;
+    score_max = score_max != null ? null : d.x0 + 0.5;
+  }
+  else {
+    score_min = d.x0;
+    score_max = d.x0 + 0.5;
+  }
 
+  score_min_input = document.getElementById("score_min");
+  score_max_input = document.getElementById("score_max");
+  if (score_min == null) score_min_input.value = 3;
+  else score_min_input.value = score_min;
+  if (score_max == null) score_max_input.value = 9.5;
+  else score_max_input.value = score_max;
+  
   updateData();
 }
 
@@ -806,12 +852,12 @@ function updateData() {
     brushed_anime_id = null;
   }
 
-  if (bin != null) {
+  if (score_min != null) {
     selectedData = globalData.filter(function (elem) {
-      return bin <= elem.score && bin + 0.5 > elem.score;
+      return score_min <= elem.score && score_max > elem.score;
     });
     individualSelectedData = individualSelectedData.filter(function (elem) {
-      return bin <= elem.score && bin + 0.5 > elem.score;
+      return score_min <= elem.score && score_max > elem.score;
     });
     selectionActive = true;
     binSelectionActive = true;
@@ -877,11 +923,12 @@ function updateData() {
     changed_source = false;
   prev_source = source;
 
-  if (prev_bin != bin) 
+  if ((prev_score_min != score_min) || (prev_score_max != score_max)) 
     changed_bin = true;
   else
     changed_bin = false;
-  prev_bin = bin;
+  prev_score_min = score_min;
+  prev_score_max = score_max;
 
   // Use setTimeout to ensure the DOM updates after data reset
   setTimeout(() => {
@@ -1056,7 +1103,7 @@ function updateScatterPlot(data) {
     x_scale = xScale;
     yScale = d3
       .scaleLinear()
-      .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
+      .domain((score_min != null) ? [score_max, score_min] : [9.5, 3])
       .range([margin, svgHeight - margin - 50]);
     y_scale = yScale;
       
