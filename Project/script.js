@@ -3,9 +3,16 @@ var selectedData = [];
 var individualSelectedData = [];
 var sunburstData = [];
 
-var bin = null;
-var prev_bin = null;
-var changed_bin = false;
+var score_min = null;
+var prev_score_min = null;
+var score_max = null;
+var prev_score_max = null;
+var changed_score = false;
+var pop_min = null;
+var prev_pop_min = null;
+var pop_max = null;
+var prev_pop_max = null;
+var changed_pop = false;
 var season = null;
 var prev_season = null;
 var changed_season = false;
@@ -33,14 +40,7 @@ mouse_down = false
 const tooltip = d3
     .select("body")
     .append("div")
-    .style("position", "absolute")
-    .style("background", "#fff")
-    .style("padding", "5px 10px")
-    .style("border", "1px solid #ccc")
-    .style("border-radius", "5px")
-    .style("visibility", "hidden")
-    .style("text-align", "left")
-    .style("color", "steelblue");
+    .attr("class", "tooltip");
 
 // Initialization of the dashboard
 function init() {
@@ -61,8 +61,7 @@ function init() {
 function createAnimeList() {
   input = document.getElementById('search_box');
   filter = input.value.toUpperCase();
-  anime_list = document.getElementById("anime_list")
-  anime_list.innerHTML = "";
+  anime_list = d3.select("#anime_list");
 
   var animeListSelectedData, individualAnimeListSelectedData;
   if (filter != "") {
@@ -84,20 +83,31 @@ function createAnimeList() {
     .domain([d3.min(selectedData, d => d.num_episodes), d3.max(selectedData, d => d.num_episodes)])
     .range(["white", "steelblue"]);
 
-  for (anime of animeListSelectedData) {
-    let anime_list_element = document.createElement("div")
-    anime_list_element.setAttribute("class", "anime_list_element unclicked");
-    anime_list_element.setAttribute("id", anime.anime_id);
-    anime_list_element.setAttribute("onclick", "clickAnime("+anime.anime_id+");")
-    anime_list_element.style.backgroundColor = colorScale(anime.num_episodes);
-    anime_list_element.innerText += anime.title;
-    anime_list.append(anime_list_element);
-  }
+  anime_list
+    .selectAll("div")
+    .remove();
 
-  for (anime of individualAnimeListSelectedData) {
-    let anime_list_element = document.getElementById(anime.anime_id)
-    anime_list_element.setAttribute("class", "anime_list_element clicked");
-  }
+  anime_list
+    .selectAll("div")
+    .data(animeListSelectedData, (d) => d.title)
+    .enter()
+    .append("div")
+    .text((d) => d.title)
+    .attr("class", "anime_list_element unclicked")
+    .style("background-color", function(d) { return colorScale(d.num_episodes); })
+    .on("click", clickAnime)
+    .on("mouseover", mouseOverAnime)
+    .on("mouseleave", mouseLeaveAnime);
+  
+  anime_list
+    .selectAll("div")
+    .filter((d) => individualAnimeListSelectedData.includes(d))
+    .attr("class", "anime_list_element clicked");
+  
+  document.getElementById("anime_list_scale_left")
+    .textContent = "\u00A0\u00A0" + d3.min(selectedData, d => d.num_episodes);
+  document.getElementById("anime_list_scale_right")
+    .textContent = d3.max(selectedData, d => d.num_episodes) + "\u00A0\u00A0";
 }
 
 function createGenreFilter() {
@@ -184,7 +194,8 @@ function createScatterPlot(data) {
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
   xScale = d3
     .scaleLinear()
-    .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+//    .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+    .domain([2.5, 7])
     .range([margin + 50, svgWidth - margin]);
   zoom_x_scale = xScale;
   yScale = d3
@@ -252,11 +263,11 @@ function createScatterPlot(data) {
     .attr('fill', 'none');
   svg
     .append("text")
-    .attr("x", svgWidth - margin)
+    .attr("x", svgWidth - margin - 10)
     .attr("y", svgHeight - 25)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
-    .text("log-Popularity");
+    .text("Popularity");
   svg
     .append("text")
     .attr("x", margin)
@@ -423,10 +434,16 @@ function createSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return d.value;
+      if ((!individualSelectionActive && sunburstData.length > 200) || (individualSelectionActive && individualSelectedData.length > 200))
+        return Math.max(d.value, 5);
+      else
+        return d.value;
     })
     .sort(function (a, b) {
-      return b.value - a.value;
+      if (a.depth == 1)
+        return b.data.sum - a.data.sum;
+      else
+        return b.data.value - a.data.value;
     });
 
   const nodes = partition(root).descendants();
@@ -455,46 +472,91 @@ function createSunburst() {
       }
       return "steelblue";
     })
+    .style("stroke-width", "0.5px")
     .style("stroke", "black")
     .on("mouseover", mouseOverSunburst)
     .on("mouseleave", mouseLeaveSunburst)
     .on("click", clickPath);
 
-    svg
+  // Create a new <g> for labels and rectangles
+  const labelGroup = g.append("g").attr("transform", `translate(${-svgWidth / 2}, ${-svgHeight / 2})`);
+
+  // Source Rectangle and Text
+  labelGroup
     .append("rect")
+    .attr("class", "source")
     .attr("x", svgWidth - 90)
     .attr("y", 50)
     .attr("width", 60)
     .attr("height", 20)
     .style("fill", "lightblue")
     .style("stroke", "black");
-  
-  svg
+
+  labelGroup
     .append("text")
+    .attr("class", "source")
     .attr("x", svgWidth - 60)
     .attr("y", 65)
     .attr("text-anchor", "middle")
     .text("Source")
     .style("font-size", "12px")
     .style("fill", "black");
-  
-  svg
+
+  // Genre Rectangle and Text
+  labelGroup
     .append("rect")
+    .attr("class", "genre")
     .attr("x", svgWidth - 90)
     .attr("y", 25)
     .attr("width", 60)
     .attr("height", 20)
     .style("fill", "steelblue")
     .style("stroke", "black");
-  
-  svg
+
+  labelGroup
     .append("text")
+    .attr("class", "genre")
     .attr("x", svgWidth - 60)
     .attr("y", 40)
     .attr("text-anchor", "middle")
     .text("Genre")
     .style("font-size", "12px")
     .style("fill", "white");
+
+  
+  // Total Selected Anime Text
+  labelGroup
+    .append("text")
+    .attr("class", "total")
+    .attr("x", margin + 10)
+    .attr("y", 40)
+    .attr("text-anchor", "start")
+    .text(`Total anime selected: ${selectedData.length}`)
+    .style("font-size", "12px")
+    .style("fill", "steelblue");
+   
+  const zoomSunburst = d3.zoom()
+  .scaleExtent([1, 5]) // Zoom scale limits
+  .extent([[0, 0], [svgWidth, svgHeight]]) 
+  .translateExtent([[0, 0], [svgWidth, svgHeight]])
+  .filter(function(event) {
+    // Only allow drag (pan) actions, ignore double-click and wheel events for zooming
+    return event.type !== 'dblclick';
+  })
+  .on("zoom", function (event) {
+    const { transform } = event; // Get current zoom transformation
+    const [mouseX, mouseY] = d3.pointer(event, svg.node());
+
+    // Adjust the new translation values by combining the zoom transform with the initial centering
+    const translateX = (svgWidth / 2) * transform.k + transform.x;
+    const translateY = (svgHeight / 2) * transform.k + transform.y;
+
+    // Apply both the zoom and the initial center transform
+    g.attr("transform", `translate(${translateX}, ${translateY}) scale(${transform.k})`);
+  });
+
+  // Apply zoom only to the sunburst SVG, not other elements
+  svg.call(zoomSunburst);
 }
 
 function createLinechart() {
@@ -641,7 +703,7 @@ function createLinechart() {
 }
 
 function buildTree(data) {
-  const tree = { name: "Total", children: [] };
+  tree = { name: "Total", children: [] };
 
   data.forEach((item) => {
     const { genres, source_type } = item;
@@ -649,7 +711,7 @@ function buildTree(data) {
      genres.forEach((genre) => {
       let genreNode = tree.children.find((node) => node.name === genre);
       if (!genreNode) {
-        genreNode = { name: genre, children: [] };
+        genreNode = { name: genre, children: [], sum: 0 };
         tree.children.push(genreNode);
       }
 
@@ -660,10 +722,12 @@ function buildTree(data) {
       } else {
         sourceNode.value += 1;
       }
+      genreNode.sum += 1;
     });
   });
 
-  if (tree.children.length == 0) {
+  if (tree.children.length == 0 || selectedData == 0) {
+    tree = { name: "Total", children: [] };
     emptyNode = { name: "empty", children: [{ name: "empty", value: 1 }] };
     tree.children.push(emptyNode);
   }
@@ -672,12 +736,55 @@ function buildTree(data) {
 }
 
 // Interaction managers
-function clickAnime(id) {
+function clickAnime(event, d) {
   //if all points are selected, it means its the first selection so make that the only selected point
-  clicked_anime_id = id;
+  clicked_anime_id = d.anime_id;
   updateDueToIndividualSelection = true;
 
   updateData();
+}
+
+function mouseOverAnime(event, d) {
+  d3
+    .select("#ScatterPlot")
+    .selectAll("circle")
+    .filter((data) => data.anime_id == d.anime_id)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 6);
+
+    tooltip
+    .style("visibility", "visible")
+    .html(
+      `<strong>Title:</strong> ${d.title}<br>
+        <strong>Score:</strong> ${d.score}<br>
+        <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Season:</strong> ${d.season}<br>
+        <strong>Number of Episodes:</strong> ${d.num_episodes}<br>
+        <strong>Source Type:</strong> ${d.source_type}<br>
+        <strong>Genres:</strong> ${d.genres}`
+    )
+
+  const tooltipWidth = parseInt(tooltip.style("width"), 10);
+  const tooltipHeight = parseInt(tooltip.style("height"), 10);
+  let top = event.pageY;
+
+  tooltip
+    .style("top", `${top}px`)
+    .style("left", `16%`);
+
+  if (mouse_down)
+    brushCircle(d);
+}
+
+function mouseLeaveAnime(event, d) {
+  tooltip.style("visibility", "hidden");
+  d3
+    .select("#ScatterPlot")
+    .selectAll("circle")
+    .filter((data) => data.anime_id == d.anime_id)
+    .style("stroke-width", "1px")
+    .attr("r", 3);
 }
 
 function clickSeason(name) {
@@ -694,6 +801,70 @@ function clickSeason(name) {
   if (season != null) {
     document.getElementById(season.toLowerCase() + '_button').classList.add('active');
   }
+
+  // Update data and visuals
+  updateData();
+}
+
+function changeScore() {
+  score_min_input = document.getElementById("score_min");
+  let new_score_min = parseFloat(score_min_input.value);
+  score_max_input = document.getElementById("score_max");
+  let new_score_max = parseFloat(score_max_input.value);
+
+  if (new_score_min > parseFloat(score_min_input.max))
+    new_score_min = parseFloat(score_min_input.max);
+  else if (new_score_min < 3)
+    new_score_min = 3;
+
+  if (new_score_max > 9.5)
+    new_score_max = 9.5;
+  else if (new_score_max < parseFloat(score_max_input.min))
+    new_score_max = parseFloat(score_max_input.min);
+
+  score_min_input.setAttribute("max", new_score_max - 0.5);
+  score_max_input.setAttribute("min", new_score_min + 0.5);
+  score_min_input.value = new_score_min;
+  score_min_input.setAttribute("value", new_score_min);
+  score_max_input.value = new_score_max;
+  score_max_input.setAttribute("value", new_score_max);
+
+  prev_score_min = score_min;
+  score_min = new_score_min;
+  prev_score_max = score_max;
+  score_max = new_score_max;
+
+  // Update data and visuals
+  updateData();
+}
+
+function changePopularity() {
+  pop_min_input = document.getElementById("pop_min");
+  let new_pop_min = parseFloat(pop_min_input.value);
+  pop_max_input = document.getElementById("pop_max");
+  let new_pop_max = parseFloat(pop_max_input.value);
+
+  if (new_pop_min > parseFloat(pop_min_input.max))
+    new_score_min = parseFloat(pop_min_input.max);
+  else if (new_pop_min < 2.5)
+    new_pop_min = 2.5;
+
+  if (new_pop_max > 7)
+    new_pop_max = 7;
+  else if (new_pop_max < parseFloat(pop_max_input.min))
+    new_pop_max = parseFloat(pop_max_input.min);
+
+  pop_min_input.setAttribute("max", new_pop_max - 0.5);
+  pop_max_input.setAttribute("min", new_pop_min + 0.5);
+  pop_min_input.value = new_pop_min;
+  pop_min_input.setAttribute("value", new_pop_min);
+  pop_max_input.value = new_pop_max;
+  pop_max_input.setAttribute("value", new_pop_max);
+
+  prev_pop_min = pop_min;
+  pop_min = new_pop_min;
+  prev_pop_max = pop_max;
+  pop_max = new_pop_max;
 
   // Update data and visuals
   updateData();
@@ -718,6 +889,49 @@ function clickSource() {
   
   if (source == "none")
     source = null;
+  
+  updateData();
+}
+
+function resetFilters() {
+  prev_score_min = score_min;
+  prev_score_max = score_max;
+  prev_pop_min = pop_min;
+  prev_pop_max = pop_max;
+  prev_season = season;
+  prev_genre = genre;
+  prev_source = source;
+
+  score_min = null;
+  score_max = null;
+  pop_min = null;
+  pop_max = null;
+  season = null;
+  genre = null;
+  source = null;
+
+  individualSelectedData = [];
+
+  document.querySelectorAll('.season_button').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+
+  document.getElementById("genre_select").value = "none";
+  document.getElementById("source_select").value = "none";
+
+  score_min_input = document.getElementById("score_min");
+  score_max_input = document.getElementById("score_max");
+  score_min_input.value = 3;
+  score_min_input.setAttribute("value", 3);
+  score_max_input.value = 9.5;
+  score_max_input.setAttribute("value", 9.5);
+
+  pop_min_input = document.getElementById("pop_min");
+  pop_max_input = document.getElementById("pop_max");
+  pop_min_input.value = 2.5;
+  pop_min_input.setAttribute("value", 2.5);
+  pop_max_input.value = 7;
+  pop_max_input.setAttribute("value", 7);
   
   updateData();
 }
@@ -751,12 +965,34 @@ function brushCircle(d) {
 
 function clickBin(event, d) {
   // select a bin if none was selected; else, select none
-  prev_bin = bin;
-  if (bin == d.x0) 
-    bin = bin != null ? null : d.x0;
-  else
-    bin = d.x0
+  prev_score_min = score_min;
+  prev_score_max = score_max;
+  if ((score_min == d.x0) && (score_max == d.x0 + 0.5)) {
+    score_min = score_min != null ? null : d.x0;
+    score_max = score_max != null ? null : d.x0 + 0.5;
+  }
+  else {
+    score_min = d.x0;
+    score_max = d.x0 + 0.5;
+  }
 
+  score_min_input = document.getElementById("score_min");
+  score_max_input = document.getElementById("score_max");
+  if (score_min == null) {
+    score_min_input.value = 3;
+    score_min_input.setAttribute("value", 3);
+  } else {
+    score_min_input.value = score_min;
+    score_min_input.setAttribute("value", score_min);
+  }
+  if (score_max == null) {
+    score_max_input.value = 9.5;
+    score_max_input.setAttribute("value", 9.5);
+  } else {
+    score_max_input.value = score_max;
+    score_max_input.setAttribute("value", score_max);
+  }
+  
   updateData();
 }
 
@@ -764,9 +1000,13 @@ function clickPath(event, d) {
   genre_filter = document.getElementById("genre_select");
   if (d.depth == 1) {
     prev_genre = genre;
-    if (d.data.name == genre) {
+    if (d.data.name == genre && source == null) {
       genre = null;
       genre_filter.value = "none";
+    }
+    else if (d.data.name == genre && source != null) {
+      source = null;
+      source_filter.value = "none";
     }
     else {
       genre = d.data.name;
@@ -780,6 +1020,8 @@ function clickPath(event, d) {
     if (d.data.name == source && d.parent.data.name == genre) {
       genre = null;
       genre_filter.value = "none";
+    }
+    else if (d.data.name == source && genre == null) {
       source = null;
       source_filter.value = "none";
     }
@@ -822,18 +1064,28 @@ function updateData() {
     brushed_anime_id = null;
   }
 
-  if (bin != null) {
+  selectedData = globalData;
+  selectionActive = false;
+
+  if (score_min != null) {
     selectedData = globalData.filter(function (elem) {
-      return bin <= elem.score && bin + 0.5 > elem.score;
+      return score_min <= elem.score && score_max > elem.score;
     });
     individualSelectedData = individualSelectedData.filter(function (elem) {
-      return bin <= elem.score && bin + 0.5 > elem.score;
+      return score_min <= elem.score && score_max > elem.score;
     });
     selectionActive = true;
     binSelectionActive = true;
-  } else {
-    selectedData = globalData;
-    selectionActive = false;
+  }
+
+  if (pop_min != null) {
+    selectedData = globalData.filter(function (elem) {
+      return pop_min <= Math.log(elem.members_count) / Math.log(10) && pop_max > Math.log(elem.members_count) / Math.log(10);
+    });
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return pop_min <= Math.log(elem.members_count) / Math.log(10) && pop_max > Math.log(elem.members_count) / Math.log(10);
+    });
+    selectionActive = true;
   }
   
   if (season != null) {
@@ -893,11 +1145,19 @@ function updateData() {
     changed_source = false;
   prev_source = source;
 
-  if (prev_bin != bin) 
+  if ((prev_score_min != score_min) || (prev_score_max != score_max)) 
     changed_bin = true;
   else
     changed_bin = false;
-  prev_bin = bin;
+  prev_score_min = score_min;
+  prev_score_max = score_max;
+
+  if ((prev_pop_min != pop_min) || (prev_pop_max != pop_max)) 
+    changed_pop = true;
+  else
+    changed_pop = false;
+  prev_pop_min = pop_min;
+  prev_pop_max = pop_max;
 
   // Use setTimeout to ensure the DOM updates after data reset
   setTimeout(() => {
@@ -906,6 +1166,45 @@ function updateData() {
     updateScatterPlot(globalData);
     updateSunburst();
   }, 0);
+}
+
+function mouseOverScatterPlot(event, d) {
+  d3.select(this)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 6);
+
+    tooltip
+    .style("visibility", "visible")
+    .html(
+      `<strong>Title:</strong> ${d.title}<br>
+        <strong>Score:</strong> ${d.score}<br>
+        <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Season:</strong> ${d.season}`
+    )
+
+  const tooltipWidth = parseInt(tooltip.style("width"), 10);
+  const tooltipHeight = parseInt(tooltip.style("height"), 10);
+  let top = event.pageY - tooltipHeight - 10;
+  let left = event.pageX + 10;
+
+  if (left + tooltipWidth > window.innerWidth) {
+    left = event.pageX - tooltipWidth - 30; //position to the left of the mouse if there's not enough space to the right
+  }
+
+  tooltip
+    .style("top", `${top}px`)
+    .style("left", `${left}px`);
+
+  if (mouse_down)
+    brushCircle(d);
+}
+
+function mouseLeaveScatterPlot(event, d) {
+  tooltip.style("visibility", "hidden");
+  d3.select(this)
+    .style("stroke-width", "1px")
+    .attr("r", 3);
 }
 
 function mouseOverScatterPlot(event, d) {
@@ -975,12 +1274,11 @@ function mouseLeaveHistogram(event, d) {
 }
 
 function mouseOverSunburst(event, d) {
-  d3.select(this).style("cursor", "pointer").style("stroke-width", "3px").raise();
-
   d3.select(this)
     .style("cursor", "pointer")
-    .style("stroke-width", "3px")
-    .attr("r", 6);
+    .style("stroke-width", "1.6px")
+    .attr("r", 6)
+    .raise();
 
   if (d.data.name == "empty")
     tooltip.html(
@@ -989,12 +1287,13 @@ function mouseOverSunburst(event, d) {
   else if (d.depth == 1)
     tooltip.html(
       `<strong>Genre:</strong> ${d.data.name}<br>
-        <strong>Count:</strong> ${d.value}`
+        <strong>Count:</strong> ${d.data.sum}`
     );
   else
     tooltip.html(
-      `<strong>Source:</strong> ${d.data.name}<br>
-      <strong>Count:</strong> ${d.value}`
+     `<strong>Genre:</strong> ${d.parent.data.name}<br>
+      <strong>Source:</strong> ${d.data.name}<br>
+      <strong>Count:</strong> ${d.data.value}`
     );
 
   tooltip
@@ -1004,11 +1303,9 @@ function mouseOverSunburst(event, d) {
 }
 
 function mouseLeaveSunburst(event, d) {
-  d3.select(this).style("stroke-width", "1px");
-
   tooltip.style("visibility", "hidden");
   d3.select(this)
-    .style("stroke-width", "1px")
+    .style("stroke-width", "0.5px")
     .attr("r", 3);
 }
 
@@ -1068,15 +1365,15 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  if (changed_bin || changed_season || changed_genre || changed_source) {
+  if (changed_bin || changed_pop || changed_season || changed_genre || changed_source) {
     xScale = d3
       .scaleLinear()
-      .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+      .domain((pop_min != null) ? [pop_min, pop_max] : [2.5, 7])
       .range([margin + 50, svgWidth - margin]);
     x_scale = xScale;
     yScale = d3
       .scaleLinear()
-      .domain((bin != null) ? [bin + 0.5, bin] : [9.5, 3])
+      .domain((score_min != null) ? [score_max, score_min] : [9.5, 3])
       .range([margin, svgHeight - margin - 50]);
     y_scale = yScale;
       
@@ -1319,10 +1616,16 @@ function updateSunburst() {
   const root = d3
     .hierarchy(treeData)
     .sum(function (d) {
-      return d.value;
+      if ((!individualSelectionActive && sunburstData.length > 200) || (individualSelectionActive && individualSelectedData.length > 200))
+        return Math.max(d.value, 5);
+      else
+        return d.value;
     })
     .sort(function (a, b) {
-      return b.value - a.value;
+      if (a.depth == 1)
+        return b.data.sum - a.data.sum;
+      else
+        return b.data.value - a.data.value;
     });
 
   const nodes = partition(root).descendants();
@@ -1335,6 +1638,23 @@ function updateSunburst() {
     .append("path")
     .attr("d", arc);
 
+  colorPalette = ["steelblue", "lightblue", "White", "Black"];
+
+  switch (season) {
+    case "Spring":
+      colorPalette = ["LimeGreen", "PaleGreen", "Black", "Black"];
+      break;
+    case "Summer":
+      colorPalette = ["Gold", "LemonChiffon", "Black", "Black"];
+      break;
+    case "Fall":
+      colorPalette = ["DarkOrange", "PeachPuff", "Black", "Black"];
+      break;
+    case "Winter":
+      colorPalette = ["Purple", "Plum", "White", "Black"];
+      break;
+  }
+
   pathsEnter.merge(paths)
     .style("fill", function (d) {
       if (d.data.name === "empty")
@@ -1342,18 +1662,26 @@ function updateSunburst() {
       else if (d.depth === 0)
         return "none";
       else if (d.depth === 1 && (genre == null || d.data.name === genre))
-        return "steelblue";
+        return colorPalette[0];
       else if (d.depth === 2 && (source == null || (d.data.name === source)) && (d.parent.data.name === genre || genre == null))
-        return "lightblue";
+        return colorPalette[1];
       else {
         return "gray";
       }
     })
     .style("stroke", "black")
+    .style("stroke-width", "0.5px")
     .on("mouseover", mouseOverSunburst)
     .on("mouseleave", mouseLeaveSunburst)
     .on("click", clickPath)
     .attr("d", arc);
+
+  totalSelected = individualSelectionActive ? individualSelectedData.length : selectedData.length;
+  svg.select("rect.genre").style("fill", colorPalette[0]);
+  svg.select("rect.source").style("fill", colorPalette[1]);
+  svg.select("text.genre").style("fill", colorPalette[2]);
+  svg.select("text.source").style("fill", colorPalette[3]);
+  svg.select("text.total").text(`Total anime selected: ${totalSelected}`);
 }
 
 function zoomed(event) {
