@@ -34,8 +34,8 @@
         <div id='popularity_filter'>
           Popularity
           <div id='popularity_input_container'>
-            <input type="number" id="pop_min" name="pop_min" min="2.5" max="6.5" value="2.5">
-            <input type="number" id="pop_max" name="pop_max" min="2.5" max="6.5" value="6.5">
+            <input type="number" id="pop_min" name="pop_min" min="2.5" max="6.5" value="2.5" step="0.5" onchange="changePopularity()">
+            <input type="number" id="pop_max" name="pop_max" min="3" max="7" value="7" step="0.5" onchange="changePopularity()">
           </div>
         </div>
         <div id='score_filter'>

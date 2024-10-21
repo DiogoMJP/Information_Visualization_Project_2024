@@ -8,6 +8,11 @@ var prev_score_min = null;
 var score_max = null;
 var prev_score_max = null;
 var changed_score = false;
+var pop_min = null;
+var prev_pop_min = null;
+var pop_max = null;
+var prev_pop_max = null;
+var changed_pop = false;
 var season = null;
 var prev_season = null;
 var changed_season = false;
@@ -188,7 +193,8 @@ function createScatterPlot(data) {
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
   xScale = d3
     .scaleLinear()
-    .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+//    .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+    .domain([2.5, 7])
     .range([margin + 50, svgWidth - margin]);
   zoom_x_scale = xScale;
   yScale = d3
@@ -688,6 +694,38 @@ function changeScore() {
   updateData();
 }
 
+function changePopularity() {
+  pop_min_input = document.getElementById("pop_min");
+  let new_pop_min = parseFloat(pop_min_input.value);
+  pop_max_input = document.getElementById("pop_max");
+  let new_pop_max = parseFloat(pop_max_input.value);
+
+  if (new_pop_min > parseFloat(pop_min_input.max))
+    new_score_min = parseFloat(pop_min_input.max);
+  else if (new_pop_min < 2.5)
+    new_pop_min = 2.5;
+
+  if (new_pop_max > 7)
+    new_pop_max = 7;
+  else if (new_pop_max < parseFloat(pop_max_input.min))
+    new_pop_max = parseFloat(pop_max_input.min);
+
+  pop_min_input.setAttribute("max", new_pop_max - 0.5);
+  pop_max_input.setAttribute("min", new_pop_min + 0.5);
+  pop_min_input.value = new_pop_min;
+  pop_min_input.setAttribute("value", new_pop_min);
+  pop_max_input.value = new_pop_max;
+  pop_max_input.setAttribute("value", new_pop_max);
+
+  prev_pop_min = pop_min;
+  pop_min = new_pop_min;
+  prev_pop_max = pop_max;
+  pop_max = new_pop_max;
+
+  // Update data and visuals
+  updateData();
+}
+
 function clickGenre() {
   prev_genre = genre;
   genre_filter = document.getElementById("genre_select");
@@ -714,12 +752,16 @@ function clickSource() {
 function resetFilters() {
   prev_score_min = score_min;
   prev_score_max = score_max;
+  prev_pop_min = pop_min;
+  prev_pop_max = pop_max;
   prev_season = season;
   prev_genre = genre;
   prev_source = source;
 
   score_min = null;
   score_max = null;
+  pop_min = null;
+  pop_max = null;
   season = null;
   genre = null;
   source = null;
@@ -732,6 +774,20 @@ function resetFilters() {
 
   document.getElementById("genre_select").value = "none";
   document.getElementById("source_select").value = "none";
+
+  score_min_input = document.getElementById("score_min");
+  score_max_input = document.getElementById("score_max");
+  score_min_input.value = 3;
+  score_min_input.setAttribute("value", 3);
+  score_max_input.value = 9.5;
+  score_max_input.setAttribute("value", 9.5);
+
+  pop_min_input = document.getElementById("pop_min");
+  pop_max_input = document.getElementById("pop_max");
+  pop_min_input.value = 2.5;
+  pop_min_input.setAttribute("value", 2.5);
+  pop_max_input.value = 7;
+  pop_max_input.setAttribute("value", 7);
   
   updateData();
 }
@@ -864,6 +920,9 @@ function updateData() {
     brushed_anime_id = null;
   }
 
+  selectedData = globalData;
+  selectionActive = false;
+
   if (score_min != null) {
     selectedData = globalData.filter(function (elem) {
       return score_min <= elem.score && score_max > elem.score;
@@ -873,9 +932,16 @@ function updateData() {
     });
     selectionActive = true;
     binSelectionActive = true;
-  } else {
-    selectedData = globalData;
-    selectionActive = false;
+  }
+
+  if (pop_min != null) {
+    selectedData = globalData.filter(function (elem) {
+      return pop_min <= Math.log(elem.members_count) / Math.log(10) && pop_max > Math.log(elem.members_count) / Math.log(10);
+    });
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return pop_min <= Math.log(elem.members_count) / Math.log(10) && pop_max > Math.log(elem.members_count) / Math.log(10);
+    });
+    selectionActive = true;
   }
   
   if (season != null) {
@@ -941,6 +1007,13 @@ function updateData() {
     changed_bin = false;
   prev_score_min = score_min;
   prev_score_max = score_max;
+
+  if ((prev_pop_min != pop_min) || (prev_pop_max != pop_max)) 
+    changed_pop = true;
+  else
+    changed_pop = false;
+  prev_pop_min = pop_min;
+  prev_pop_max = pop_max;
 
   // Use setTimeout to ensure the DOM updates after data reset
   setTimeout(() => {
@@ -1107,10 +1180,10 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  if (changed_bin || changed_season || changed_genre || changed_source) {
+  if (changed_bin || changed_pop || changed_season || changed_genre || changed_source) {
     xScale = d3
       .scaleLinear()
-      .domain([2.5, d3.max(data, (d) => Math.log(d.members_count) / Math.log(10))])
+      .domain((pop_min != null) ? [pop_min, pop_max] : [2.5, 7])
       .range([margin + 50, svgWidth - margin]);
     x_scale = xScale;
     yScale = d3
