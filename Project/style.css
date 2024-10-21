@@ -228,6 +228,7 @@
   display: grid;
   grid-template-columns: auto auto;
   gap: 2px;
+  justify-content: center;
   margin: auto;
 }
 .popularity_button:hover {
@@ -243,6 +244,7 @@
   display: grid;
   grid-template-columns: auto auto;
   gap: 2px;
+  justify-content: center;
   margin: auto;
 }
 #genre_filter {
