@@ -54,6 +54,7 @@ function init() {
     createScatterPlot(globalData);
     createHistogram(globalData);
     createSunburst();
+    createLinechart();
   });
 }
 
@@ -496,6 +497,149 @@ function createSunburst() {
     .style("fill", "white");
 }
 
+function createLinechart() {
+  // Define the color scale for seasons
+  const colorScale = d3.scaleOrdinal()
+    .domain(["Spring", "Summer", "Fall", "Winter"])
+    .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
+
+  // Define the order of seasons
+  const seasonOrder = ["Winter", "Spring", "Summer", "Fall"];
+
+  // Sort by year and season with custom order of seasons and ensure years are sorted numerically
+  const sortedData = [];
+
+  // Group by year and season
+  const groupedData = d3.group(globalData, d => d.year, d => d.season);
+
+  // Sort by year numerically
+  const sortedYears = Array.from(groupedData.keys()).sort((a, b) => a - b);
+
+  // Iterate over each year and order its seasons properly
+  sortedYears.forEach(year => {
+    const seasonData = groupedData.get(year);
+    seasonOrder.forEach(season => {
+      if (seasonData.has(season)) {
+        const seasonValues = seasonData.get(season);
+        const mean = d3.mean(seasonValues, d => d.score);
+        sortedData.push({ year, season, meanScore: mean });
+      }
+    });
+  });
+
+  // Define SVG dimensions and margins
+  const svgWidth = d3.select("#ScentedPlot").node().clientWidth;
+  const svgHeight = d3.select("#ScentedPlot").node().clientHeight;
+
+  const margin = { top: 20, bottom: 40, left: 60, right: 60 };
+
+  const svg = d3
+    .select("#ScentedPlot")
+    .append("svg")
+    .attr("width", svgWidth)
+    .attr("height", svgHeight);
+
+  // Create a band scale for X-axis (based on sortedData order)
+  const xScale = d3
+    .scaleBand()
+    .domain(sortedData.map(d => `${d.year}-${d.season}`)) // Keep the sorted data order
+    .range([margin.left, svgWidth - margin.right])
+    .padding(0.2);
+
+  // Y Scale for the mean points
+  const yScale = d3
+    .scaleLinear()
+    .domain([d3.min(sortedData, d => d.meanScore), d3.max(sortedData, d => d.meanScore)])
+    .nice()
+    .range([svgHeight - margin.bottom, margin.top]);
+
+  // Line generator function
+  const line = d3
+    .line()
+    .x(d => xScale(`${d.year}-${d.season}`) + xScale.bandwidth() / 2)
+    .y(d => yScale(d.meanScore));
+
+  // Draw line path
+  svg
+    .append("path")
+    .datum(sortedData)
+    .attr("class", "line")
+    .attr("fill", "none")
+    .attr("stroke", "steelblue")
+    .attr("stroke-width", 2)
+    .attr("d", line);
+
+  // Draw circles on data points
+  svg
+    .selectAll("circle")
+    .data(sortedData)
+    .enter()
+    .append("circle")
+    .attr("cx", d => xScale(`${d.year}-${d.season}`) + xScale.bandwidth() / 2)
+    .attr("cy", d => yScale(d.meanScore))
+    .attr("r", 4)
+    .attr("fill", function(d) { return colorScale(d.season); })
+    .style("stroke", "black")
+    .on("mouseover", mouseOverLineChart)
+    .on("mouseleave", mouseLeaveLineChart);
+
+  // X Axis with year ticks for Winter, color ticks for seasons
+  const xAxis = d3.axisBottom(xScale)
+    .tickFormat(d => {
+      const [year, season] = d.split("-");
+      return season === "Winter" ? year : ""; // Only show year on Winter
+    });
+
+  const xAxisGroup = svg
+    .append("g")
+    .attr("transform", `translate(0, ${svgHeight - margin.bottom})`)
+    .call(xAxis);
+
+  // Style X-axis ticks: Year on Winter, colored ticks for seasons
+  xAxisGroup
+    .selectAll(".tick")
+    .each(function (d) {
+      const [year, season] = d.split("-");
+      const tick = d3.select(this);
+
+      if (season === "Winter") {
+        // Longer, thicker ticks for Winter (year) with color from colorScale
+        tick.select("line")
+          .attr("y2", 10)
+          .style("stroke", colorScale("Winter"))
+          .style("stroke-width", "2px");
+
+        tick.select("text")
+          .attr("dy", "15px")
+          .style("fill", "black")
+          .style("font-weight", "bold");
+      } else {
+        // Shorter, thicker, colored ticks for seasons, no text
+        const color = colorScale(season);
+        tick.select("line")
+          .attr("y2", 7) // Make the ticks shorter than Winter ticks
+          .style("stroke", color)
+          .style("stroke-width", "2px");
+
+        tick.select("text").remove(); // Remove text for seasons
+      }
+    });
+
+  // Y Axis for mean points
+  svg
+    .append("g")
+    .attr("transform", `translate(${margin.left}, 0)`)
+    .call(d3.axisLeft(yScale));
+
+  svg
+    .append("text")
+    .attr("x", margin.left - 10)
+    .attr("y", margin.top - 10)
+    .attr("font-size", 10)
+    .attr("text-anchor", "middle")
+    .text("Mean Score");
+}
+
 function buildTree(data) {
   const tree = { name: "Total", children: [] };
 
@@ -866,6 +1010,47 @@ function mouseLeaveSunburst(event, d) {
   d3.select(this)
     .style("stroke-width", "1px")
     .attr("r", 3);
+}
+
+function mouseOverLineChart(event, d) {
+  d3.select(this)
+    .style("cursor", "pointer")
+    .style("stroke-width", "3px")
+    .attr("r", 8);
+
+    tooltip
+    .style("visibility", "visible")
+    .html(
+      `<strong>Year:</strong> ${d.year}<br>
+        <strong>Season:</strong> ${d.season}<br>
+        <strong>Mean Score:</strong> ${d.meanScore.toFixed(2)}`
+    )
+
+  const tooltipWidth = parseInt(tooltip.style("width"), 10);
+  const tooltipHeight = parseInt(tooltip.style("height"), 10);
+  let top = event.pageY - tooltipHeight - 10;
+  let left = event.pageX + 10;
+
+  if (left + tooltipWidth > window.innerWidth) {
+    left = event.pageX - tooltipWidth - 30; //position to the left of the mouse if there's not enough space to the right
+  }
+  if (top < 0) {
+    top = event.pageY;
+  }
+
+  tooltip
+    .style("top", `${top}px`)
+    .style("left", `${left}px`);
+
+  if (mouse_down)
+    brushCircle(d);
+}
+
+function mouseLeaveLineChart(event, d) {
+  tooltip.style("visibility", "hidden");
+  d3.select(this)
+    .style("stroke-width", "1px")
+    .attr("r", 4);
 }
 
 
