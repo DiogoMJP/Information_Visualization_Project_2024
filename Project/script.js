@@ -762,7 +762,7 @@ function mouseOverAnime(event, d) {
         <strong>Season:</strong> ${d.season}<br>
         <strong>Number of Episodes:</strong> ${d.num_episodes}<br>
         <strong>Source Type:</strong> ${d.source_type}<br>
-        <strong>Genres:</strong> ${d.genres}`
+        <strong>Genres:</strong> ${d.genres.join(', ')}`
     )
 
   const tooltipWidth = parseInt(tooltip.style("width"), 10);
