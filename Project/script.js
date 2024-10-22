@@ -16,6 +16,11 @@ var changed_pop = false;
 var season = null;
 var prev_season = null;
 var changed_season = false;
+var year_max = null;
+var year_min = null;
+var prev_year_max = null;
+var prev_year_min = null;
+var changed_year = false;
 var genre = null;
 var prev_genre = null;
 var changed_genre = false;
@@ -715,11 +720,19 @@ function createSunburst() {
     .on("mouseleave", mouseLeaveSunburst)
     .on("click", clickPath);
 
-  // Create a new <g> for labels and rectangles
-  const labelGroup = g.append("g").attr("transform", `translate(${-svgWidth / 2}, ${-svgHeight / 2})`);
-
   // Source Rectangle and Text
-  labelGroup
+  svg
+    .append("rect")
+    .attr("x", svgWidth - 100)
+    .attr("y", 18)
+    .attr("width", 80)
+    .attr("height", 60)
+    .style("fill", "white")
+    .style("opacity", 0.5)
+    .attr("rx", 5)
+    .attr("ry", 5);
+
+  svg
     .append("rect")
     .attr("class", "source")
     .attr("x", svgWidth - 90)
@@ -729,7 +742,7 @@ function createSunburst() {
     .style("fill", "lightblue")
     .style("stroke", "black");
 
-  labelGroup
+  svg
     .append("text")
     .attr("class", "source")
     .attr("x", svgWidth - 60)
@@ -740,7 +753,7 @@ function createSunburst() {
     .style("fill", "black");
 
   // Genre Rectangle and Text
-  labelGroup
+  svg
     .append("rect")
     .attr("class", "genre")
     .attr("x", svgWidth - 90)
@@ -750,7 +763,7 @@ function createSunburst() {
     .style("fill", "steelblue")
     .style("stroke", "black");
 
-  labelGroup
+  svg
     .append("text")
     .attr("class", "genre")
     .attr("x", svgWidth - 60)
@@ -760,9 +773,19 @@ function createSunburst() {
     .style("font-size", "12px")
     .style("fill", "white");
 
+      // Total Selected Anime Text
+  svg
+    .append("rect")
+    .attr("x", margin + 5)
+    .attr("y", 23)
+    .attr("width", 170)
+    .attr("height", 25)
+    .style("fill", "white")
+    .style("opacity", 0.8)
+    .attr("rx", 5)
+    .attr("ry", 5);
   
-  // Total Selected Anime Text
-  labelGroup
+  svg
     .append("text")
     .attr("class", "total")
     .attr("x", margin + 10)
@@ -880,7 +903,8 @@ function createLinechart() {
     .attr("fill", function(d) { return colorScale(d.season); })
     .style("stroke", "black")
     .on("mouseover", mouseOverLineChart)
-    .on("mouseleave", mouseLeaveLineChart);
+    .on("mouseleave", mouseLeaveLineChart)
+    .on("click", clickLineChartCircle);
 
   // X Axis with year ticks for Winter, color ticks for seasons
   const xAxis = d3.axisBottom(xScale)
@@ -999,7 +1023,7 @@ function mouseOverAnime(event, d) {
         <strong>Season:</strong> ${d.season}<br>
         <strong>Number of Episodes:</strong> ${d.num_episodes}<br>
         <strong>Source Type:</strong> ${d.source_type}<br>
-        <strong>Genres:</strong> ${d.genres}`
+        <strong>Genres:</strong> ${d.genres.join(', ')}`
     )
 
   const tooltipWidth = parseInt(tooltip.style("width"), 10);
@@ -1094,7 +1118,11 @@ function resetFilters() {
   prev_season = season;
   prev_genre = genre;
   prev_source = source;
+  prev_year_min = year_min;
+  prev_year_max = year_max;
 
+  year_min = null;
+  year_max = null;
   score_min = null;
   score_max = null;
   pop_min = null;
@@ -1208,6 +1236,33 @@ function clickPath(event, d) {
   updateData();
 }
 
+function clickLineChartCircle(event, d) {
+  prev_year = year_min;
+  prev_year_max = year_max;
+  prev_season = season;
+  if (year_max != d.year || season != d.season) {
+    year_max = d.year;
+    year_min = d.year;
+    season = d.season;
+  }
+  else {
+    year_max = null;
+    year_min = null;
+    season = null;
+  }
+
+  // Update active button styles
+  document.querySelectorAll('.season_button').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+
+  if (season != null) {
+    document.getElementById(season.toLowerCase() + '_button').classList.add('active');
+  }
+
+  updateData();
+}
+
 function updateData() {
   if (clicked_anime_id) {
     if (individualSelectedData.some((anime) => anime.anime_id == clicked_anime_id)) {
@@ -1238,8 +1293,18 @@ function updateData() {
   selectedData = globalData;
   selectionActive = false;
 
+  if (year_min != null) {
+    selectedData = selectedData.filter(function (elem) {
+      return year_min <= elem.year && year_max >= elem.year;
+    });
+    individualSelectedData = individualSelectedData.filter(function (elem) {
+      return year_min <= elem.year && year_max >= elem.year;
+    });
+    selectionActive = true;
+  }
+
   if (score_min != null) {
-    selectedData = globalData.filter(function (elem) {
+    selectedData = selectedData.filter(function (elem) {
       return score_min <= elem.score && score_max > elem.score;
     });
     individualSelectedData = individualSelectedData.filter(function (elem) {
@@ -1250,7 +1315,7 @@ function updateData() {
   }
 
   if (pop_min != null) {
-    selectedData = globalData.filter(function (elem) {
+    selectedData = selectedData.filter(function (elem) {
       return pop_min <= Math.log(elem.members_count) / Math.log(10) && pop_max > Math.log(elem.members_count) / Math.log(10);
     });
     individualSelectedData = individualSelectedData.filter(function (elem) {
@@ -1315,6 +1380,13 @@ function updateData() {
   else
     changed_source = false;
   prev_source = source;
+
+  if ((prev_year_min != year_min) || (prev_year_max != year_max)) 
+    changed_year = true;
+  else
+    changed_year = false;
+  prev_year_min = year_min;
+  prev_year_max = year_max;
 
   if ((prev_score_min != score_min) || (prev_score_max != score_max)) 
     changed_bin = true;
@@ -1536,7 +1608,7 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  if (changed_bin || changed_pop || changed_season || changed_genre || changed_source) {
+  if (changed_bin || changed_pop || changed_season || changed_genre || changed_source || changed_year) {
     xScale = d3
       .scaleLinear()
       .domain((pop_min != null) ? [pop_min, pop_max] : [2.5, 7])
@@ -1572,6 +1644,8 @@ function updateScatterPlot(data) {
       .filter((d) => season == null || season == d.season)
       .filter((d) => genre == null || d.genres.includes(genre))
       .filter((d) => source == null || d.source_type == source)
+      .filter((d) => year_max == null || d.year >= year_max)
+      .filter((d) => year_min == null || d.year <= year_min)
       .style("opacity", 1);
   
     // Update regression line
