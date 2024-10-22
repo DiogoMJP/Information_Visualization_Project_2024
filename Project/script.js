@@ -478,11 +478,19 @@ function createSunburst() {
     .on("mouseleave", mouseLeaveSunburst)
     .on("click", clickPath);
 
-  // Create a new <g> for labels and rectangles
-  const labelGroup = g.append("g").attr("transform", `translate(${-svgWidth / 2}, ${-svgHeight / 2})`);
-
   // Source Rectangle and Text
-  labelGroup
+  svg
+    .append("rect")
+    .attr("x", svgWidth - 100)
+    .attr("y", 18)
+    .attr("width", 80)
+    .attr("height", 60)
+    .style("fill", "white")
+    .style("opacity", 0.5)
+    .attr("rx", 5)
+    .attr("ry", 5);
+
+  svg
     .append("rect")
     .attr("class", "source")
     .attr("x", svgWidth - 90)
@@ -492,7 +500,7 @@ function createSunburst() {
     .style("fill", "lightblue")
     .style("stroke", "black");
 
-  labelGroup
+  svg
     .append("text")
     .attr("class", "source")
     .attr("x", svgWidth - 60)
@@ -503,7 +511,7 @@ function createSunburst() {
     .style("fill", "black");
 
   // Genre Rectangle and Text
-  labelGroup
+  svg
     .append("rect")
     .attr("class", "genre")
     .attr("x", svgWidth - 90)
@@ -513,7 +521,7 @@ function createSunburst() {
     .style("fill", "steelblue")
     .style("stroke", "black");
 
-  labelGroup
+  svg
     .append("text")
     .attr("class", "genre")
     .attr("x", svgWidth - 60)
@@ -523,9 +531,19 @@ function createSunburst() {
     .style("font-size", "12px")
     .style("fill", "white");
 
+      // Total Selected Anime Text
+  svg
+    .append("rect")
+    .attr("x", margin + 5)
+    .attr("y", 23)
+    .attr("width", 170)
+    .attr("height", 25)
+    .style("fill", "white")
+    .style("opacity", 0.8)
+    .attr("rx", 5)
+    .attr("ry", 5);
   
-  // Total Selected Anime Text
-  labelGroup
+  svg
     .append("text")
     .attr("class", "total")
     .attr("x", margin + 10)

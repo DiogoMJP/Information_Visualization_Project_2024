@@ -269,7 +269,6 @@
   display: block;
 }
 #ScentedPlot {
-  background-color: rgba(255, 255, 255, 0.8);
   grid-column: 2 / span 2;
 }
 #Sunburst {
