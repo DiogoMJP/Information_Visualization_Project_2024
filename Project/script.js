@@ -35,6 +35,9 @@ var xScale;
 var yScale;
 var zoomBehavior;
 
+var updateScoreSlider;
+var updatePopularitySlider;
+
 mouse_down = false
 
 const tooltip = d3
@@ -55,6 +58,8 @@ function init() {
     createHistogram(globalData);
     createSunburst();
     createLinechart();
+    createScoreSlider("score_slider_container", 3, 9.5, changeScore);
+    createPopularitySlider("pop_slider_container", 2.5, 7, changePopularity);
   });
 }
 
@@ -108,6 +113,238 @@ function createAnimeList() {
     .textContent = "\u00A0\u00A0" + d3.min(selectedData, d => d.num_episodes);
   document.getElementById("anime_list_scale_right")
     .textContent = d3.max(selectedData, d => d.num_episodes) + "\u00A0\u00A0";
+}
+
+function createScoreSlider(id, v_min, v_max, updateFunc) {
+  var width = document.getElementById(id).offsetWidth;
+
+  var sliderVals=[v_min, v_max],
+      svg = d3.select("#" + id).append("svg")
+        .attr('width', width)
+        .attr('height', 30);
+  
+  var x = d3.scaleLinear()
+      .domain([v_min, v_max])
+      .range([16, width - 16])
+      .clamp(true);
+  
+  var xMin=x(v_min),
+      xMax=x(v_max)
+  
+  var slider = svg.append("g")
+      .attr("class", "slider")
+      .attr("transform", "translate(5,10)");
+  
+  slider.append("line")
+      .attr("class", "track")
+      .attr("x1", x.range()[0])
+      .attr("x2", x.range()[1])
+  
+  var selRange = slider.append("line")
+      .attr("class", "sel-range")
+      .attr("x1", x(sliderVals[0]))
+      .attr("x2", x(sliderVals[1]))
+  
+  slider.insert("g", ".track-overlay")
+      .attr("class", "ticks")
+      .attr("transform", "translate(0,20)")
+      .selectAll("text")
+      .data(x.ticks(14))
+      .enter().append("text")
+      .attr("x", x)
+      .attr("text-anchor", "middle")
+      .style("font-size", "12px")
+      .style("fill", "black")
+      .text(d => d);
+  
+  var handle = slider.selectAll("circle")
+    .data([0, 1])
+    .enter().append("circle", ".track-overlay")
+      .attr("class", "handle")
+      .attr("cy", 0)
+      .attr("cx", d => x(sliderVals[d]))
+      .attr("r", 8)
+      .call(
+          d3.drag()
+            .on("start", startDrag)
+            .on("drag", drag)
+            .on("end", endDrag)
+      );
+  
+  function startDrag(){
+    d3.select(this).raise().classed("active", true);
+  }
+  
+  function drag(event, d){
+    var x1=event.x;
+    if(x1>xMax){
+      x1=xMax
+    }else if(x1<xMin){
+      x1=xMin
+    }
+    d3.select(this).attr("cx", x1);
+    var x2=x(sliderVals[d==0?1:0])
+    selRange
+        .attr("x1", x1)
+        .attr("x2", x2)
+  }
+  
+  function endDrag(event, d){
+    var v=Math.round(2*x.invert(event.x))/2;
+    var elem=d3.select(this)
+    sliderVals[d] = v
+    var v1=Math.min(sliderVals[0], sliderVals[1]),
+        v2=Math.max(sliderVals[0], sliderVals[1]);
+    elem.classed("active", false)
+      .attr("cx", x(v));
+    selRange
+        .attr("x1", x(v1))
+        .attr("x2", x(v2))
+
+    updateFunc(v1, v2);
+  }
+
+  updateScoreSlider = (v1, v2) => {
+    sliderVals[0] = v1;
+    sliderVals[1] = v2;
+
+    slider.selectAll("circle").remove();
+
+    slider.selectAll("circle")
+    .data([0, 1])
+    .enter().append("circle", ".track-overlay")
+      .attr("class", "handle")
+      .attr("cy", 0)
+      .attr("cx", d => x(sliderVals[d]))
+      .attr("r", 8)
+      .call(
+          d3.drag()
+            .on("start", startDrag)
+            .on("drag", drag)
+            .on("end", endDrag)
+      );
+
+    selRange
+      .attr("x1", x(v1))
+      .attr("x2", x(v2))
+  };
+
+}
+
+function createPopularitySlider(id, v_min, v_max, updateFunc) {
+  var width = document.getElementById(id).offsetWidth;
+
+  var sliderVals=[v_min, v_max],
+      svg = d3.select("#" + id).append("svg")
+        .attr('width', width)
+        .attr('height', 30);
+  
+  var x = d3.scaleLinear()
+      .domain([v_min, v_max])
+      .range([16, width - 16])
+      .clamp(true);
+  
+  var xMin=x(v_min),
+      xMax=x(v_max)
+  
+  var slider = svg.append("g")
+      .attr("class", "slider")
+      .attr("transform", "translate(5,10)");
+  
+  slider.append("line")
+      .attr("class", "track")
+      .attr("x1", x.range()[0])
+      .attr("x2", x.range()[1])
+  
+  var selRange = slider.append("line")
+      .attr("class", "sel-range")
+      .attr("x1", x(sliderVals[0]))
+      .attr("x2", x(sliderVals[1]))
+  
+  slider.insert("g", ".track-overlay")
+      .attr("class", "ticks")
+      .attr("transform", "translate(0,20)")
+      .selectAll("text")
+      .data(x.ticks(14))
+      .enter().append("text")
+      .attr("x", x)
+      .attr("text-anchor", "middle")
+      .style("font-size", "12px")
+      .style("fill", "black")
+      .text(d => d);
+  
+  var handle = slider.selectAll("circle")
+    .data([0, 1])
+    .enter().append("circle", ".track-overlay")
+      .attr("class", "handle")
+      .attr("cy", 0)
+      .attr("cx", d => x(sliderVals[d]))
+      .attr("r", 8)
+      .call(
+          d3.drag()
+            .on("start", startDrag)
+            .on("drag", drag)
+            .on("end", endDrag)
+      );
+  
+  function startDrag(){
+    d3.select(this).raise().classed("active", true);
+  }
+  
+  function drag(event, d){
+    var x1=event.x;
+    if(x1>xMax){
+      x1=xMax
+    }else if(x1<xMin){
+      x1=xMin
+    }
+    d3.select(this).attr("cx", x1);
+    var x2=x(sliderVals[d==0?1:0])
+    selRange
+        .attr("x1", x1)
+        .attr("x2", x2)
+  }
+  
+  function endDrag(event, d){
+    var v=Math.round(2*x.invert(event.x))/2;
+    var elem=d3.select(this)
+    sliderVals[d] = v
+    var v1=Math.min(sliderVals[0], sliderVals[1]),
+        v2=Math.max(sliderVals[0], sliderVals[1]);
+    elem.classed("active", false)
+      .attr("cx", x(v));
+    selRange
+        .attr("x1", x(v1))
+        .attr("x2", x(v2))
+
+    updateFunc(v1, v2);
+  }
+
+  updatePopularitySlider = (v1, v2) => {
+    sliderVals[0] = v1;
+    sliderVals[1] = v2;
+
+    slider.selectAll("circle").remove();
+
+    slider.selectAll("circle")
+    .data([0, 1])
+    .enter().append("circle", ".track-overlay")
+      .attr("class", "handle")
+      .attr("cy", 0)
+      .attr("cx", d => x(sliderVals[d]))
+      .attr("r", 8)
+      .call(
+          d3.drag()
+            .on("start", startDrag)
+            .on("drag", drag)
+            .on("end", endDrag)
+      );
+
+    selRange
+      .attr("x1", x(v1))
+      .attr("x2", x(v2))
+  };
+
 }
 
 function createGenreFilter() {
@@ -806,65 +1043,21 @@ function clickSeason(name) {
   updateData();
 }
 
-function changeScore() {
-  score_min_input = document.getElementById("score_min");
-  let new_score_min = parseFloat(score_min_input.value);
-  score_max_input = document.getElementById("score_max");
-  let new_score_max = parseFloat(score_max_input.value);
-
-  if (new_score_min > parseFloat(score_min_input.max))
-    new_score_min = parseFloat(score_min_input.max);
-  else if (new_score_min < 3)
-    new_score_min = 3;
-
-  if (new_score_max > 9.5)
-    new_score_max = 9.5;
-  else if (new_score_max < parseFloat(score_max_input.min))
-    new_score_max = parseFloat(score_max_input.min);
-
-  score_min_input.setAttribute("max", new_score_max - 0.5);
-  score_max_input.setAttribute("min", new_score_min + 0.5);
-  score_min_input.value = new_score_min;
-  score_min_input.setAttribute("value", new_score_min);
-  score_max_input.value = new_score_max;
-  score_max_input.setAttribute("value", new_score_max);
-
+function changeScore(v1, v2) {
   prev_score_min = score_min;
-  score_min = new_score_min;
+  score_min = v1;
   prev_score_max = score_max;
-  score_max = new_score_max;
+  score_max = v2;
 
   // Update data and visuals
   updateData();
 }
 
-function changePopularity() {
-  pop_min_input = document.getElementById("pop_min");
-  let new_pop_min = parseFloat(pop_min_input.value);
-  pop_max_input = document.getElementById("pop_max");
-  let new_pop_max = parseFloat(pop_max_input.value);
-
-  if (new_pop_min > parseFloat(pop_min_input.max))
-    new_score_min = parseFloat(pop_min_input.max);
-  else if (new_pop_min < 2.5)
-    new_pop_min = 2.5;
-
-  if (new_pop_max > 7)
-    new_pop_max = 7;
-  else if (new_pop_max < parseFloat(pop_max_input.min))
-    new_pop_max = parseFloat(pop_max_input.min);
-
-  pop_min_input.setAttribute("max", new_pop_max - 0.5);
-  pop_max_input.setAttribute("min", new_pop_min + 0.5);
-  pop_min_input.value = new_pop_min;
-  pop_min_input.setAttribute("value", new_pop_min);
-  pop_max_input.value = new_pop_max;
-  pop_max_input.setAttribute("value", new_pop_max);
-
+function changePopularity(v1, v2) {
   prev_pop_min = pop_min;
-  pop_min = new_pop_min;
+  pop_min = v1;
   prev_pop_max = pop_max;
-  pop_max = new_pop_max;
+  pop_max = v2;
 
   // Update data and visuals
   updateData();
@@ -919,19 +1112,8 @@ function resetFilters() {
   document.getElementById("genre_select").value = "none";
   document.getElementById("source_select").value = "none";
 
-  score_min_input = document.getElementById("score_min");
-  score_max_input = document.getElementById("score_max");
-  score_min_input.value = 3;
-  score_min_input.setAttribute("value", 3);
-  score_max_input.value = 9.5;
-  score_max_input.setAttribute("value", 9.5);
-
-  pop_min_input = document.getElementById("pop_min");
-  pop_max_input = document.getElementById("pop_max");
-  pop_min_input.value = 2.5;
-  pop_min_input.setAttribute("value", 2.5);
-  pop_max_input.value = 7;
-  pop_max_input.setAttribute("value", 7);
+  updateScoreSlider(3, 9.5);
+  updatePopularitySlider(2.5, 7);
   
   updateData();
 }
@@ -976,21 +1158,10 @@ function clickBin(event, d) {
     score_max = d.x0 + 0.5;
   }
 
-  score_min_input = document.getElementById("score_min");
-  score_max_input = document.getElementById("score_max");
   if (score_min == null) {
-    score_min_input.value = 3;
-    score_min_input.setAttribute("value", 3);
+    updateScoreSlider(3, 9.5);
   } else {
-    score_min_input.value = score_min;
-    score_min_input.setAttribute("value", score_min);
-  }
-  if (score_max == null) {
-    score_max_input.value = 9.5;
-    score_max_input.setAttribute("value", 9.5);
-  } else {
-    score_max_input.value = score_max;
-    score_max_input.setAttribute("value", score_max);
+    updateScoreSlider(score_min, score_max);
   }
   
   updateData();

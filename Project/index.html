@@ -33,17 +33,11 @@
         </div>
         <div id='popularity_filter'>
           Popularity
-          <div id='popularity_input_container'>
-            <input type="number" id="pop_min" name="pop_min" min="2.5" max="6.5" value="2.5" step="0.5" onchange="changePopularity()">
-            <input type="number" id="pop_max" name="pop_max" min="3" max="7" value="7" step="0.5" onchange="changePopularity()">
-          </div>
+          <div class="slider-holder" id="pop_slider_container"></div>
         </div>
         <div id='score_filter'>
           Score
-          <div id='score_input_container'>
-            <input type="number" id="score_min" name="score_min" min="3" max="9" value="3" step="0.5" onchange="changeScore()">
-            <input type="number" id="score_max" name="score_max" min="3.5" max="9.5" value="9.5" step="0.5" onchange="changeScore()">
-          </div>
+          <div class="slider-holder" id="score_slider_container"></div>
         </div>
         <div id='genre_filter'>
           Genre<br>
