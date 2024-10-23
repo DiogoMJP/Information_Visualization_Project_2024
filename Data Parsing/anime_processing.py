@@ -30,8 +30,8 @@ data = data.drop('pics', axis=1)
 
 data = data.dropna()
 
-data['year'] = data['season'].apply(lambda season: season.split(" ")[1].capitalize())
-data['season'] = data['season'].apply(lambda season: season.split(" ")[0])
+data['year'] = data['season'].apply(lambda season: season.split(" ")[1])
+data['season'] = data['season'].apply(lambda season: season.split(" ")[0].capitalize())
 data = data[data.year != 'None']
 data['year'] = data['year'].apply(lambda year: int(year))
 data = data[(data.year >= 2000) & (data.year < 2010)]
