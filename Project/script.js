@@ -16,11 +16,28 @@ var changed_pop = false;
 var season = null;
 var prev_season = null;
 var changed_season = false;
-var year_max = null;
 var year_min = null;
+var year_max = null;
+var season_min = null;
+var season_max = null;
+const seasonThresholds = {
+  "Winter": 0,      
+  "Spring": 0.25, 
+  "Summer": 0.5,  
+  "Fall": 0.75 
+};
+const seasonBasedOnThreshold = {
+  0: "Winter",      
+  0.25: "Spring", 
+  0.5: "Summer",  
+  0.75: "Fall" 
+};
 var prev_year_max = null;
 var prev_year_min = null;
 var changed_year = false;
+var prev_season_max = null;
+var prev_season_min = null;
+var changed_season_range = false;
 var genre = null;
 var prev_genre = null;
 var changed_genre = false;
@@ -39,6 +56,7 @@ var zoom_y_scale = null;
 var xScale;
 var yScale;
 var zoomBehavior;
+var lineChartSlider;
 
 mouse_down = false
 
@@ -724,6 +742,43 @@ function createLinechart() {
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Mean Score");
+
+  const firstTick = sortedData[0]; // First year-season in the sorted data
+  const lastTick = sortedData[sortedData.length - 1]; 
+  const firstTickPosition = xScale(`${firstTick.year}-${firstTick.season}`) + xScale.bandwidth() / 2;
+  const lastTickPosition = xScale(`${lastTick.year}-${lastTick.season}`) + xScale.bandwidth() / 2;
+
+  // Define the step as 0.25 to represent each season (Winter=0, Spring=0.25, Summer=0.5, Fall=0.75)
+  const sliderDomain = sortedData.map(d => d.year + seasonOrder.indexOf(d.season) * 0.25);
+
+  // Update the slider to match the exact tick positions
+  lineChartSlider = d3
+    .sliderBottom()
+    .min(d3.min(sliderDomain))
+    .max(d3.max(sliderDomain))
+    .step(0.25) // Use 0.25 to represent the seasons in fractions of a year
+    .width(lastTickPosition - firstTickPosition)
+    .ticks(0) // One tick per season
+    .default([d3.min(sliderDomain), d3.max(sliderDomain)])
+    .fill("steelblue")
+    .displayValue("")
+    .on('onchange', changeLineChartSlider);
+
+  // Append the slider to the chart and position it right below the x-axis
+  sliderGroup = svg
+    .append('g')
+    .attr('transform', `translate(${firstTickPosition}, ${svgHeight - margin.bottom})`) // Adjust for positioning
+    .call(lineChartSlider);
+
+  sliderGroup.selectAll(".track")
+    .remove();
+  sliderGroup.selectAll(".track-inset")
+    .remove();
+  sliderGroup.selectAll(".track-fill")
+    .remove();
+  sliderGroup.selectAll(".handle")
+    .attr("d", "M-2.75,-2.75v5l3,2.75l3,-2.75v-5z");
+
 }
 
 function buildTree(data) {
@@ -918,6 +973,7 @@ function clickSource() {
 }
 
 function resetFilters() {
+  lineChartSlider.value(lineChartSlider.default());
   prev_score_min = score_min;
   prev_score_max = score_max;
   prev_pop_min = pop_min;
@@ -927,9 +983,13 @@ function resetFilters() {
   prev_source = source;
   prev_year_min = year_min;
   prev_year_max = year_max;
+  prev_season_min = season_min;
+  prev_season_max = season_max;
 
   year_min = null;
   year_max = null;
+  season_min = null;
+  season_max = null;
   score_min = null;
   score_max = null;
   pop_min = null;
@@ -1066,18 +1126,21 @@ function clickPath(event, d) {
 }
 
 function clickLineChartCircle(event, d) {
-  prev_year = year_min;
-  prev_year_max = year_max;
-  prev_season = season;
-  if (year_max != d.year || season != d.season) {
+  if (year_max != d.year || year_min != d.year || season != d.season) {
     year_max = d.year;
     year_min = d.year;
     season = d.season;
+    season_max = seasonThresholds[d.season];
+    season_min = seasonThresholds[d.season];
+    lineChartSlider.value([d.year + seasonThresholds[d.season], d.year + seasonThresholds[d.season]]);
   }
   else {
     year_max = null;
     year_min = null;
     season = null;
+    season_max = null;
+    season_min = null;
+    lineChartSlider.value(lineChartSlider.default());
   }
 
   // Update active button styles
@@ -1087,6 +1150,27 @@ function clickLineChartCircle(event, d) {
 
   if (season != null) {
     document.getElementById(season.toLowerCase() + '_button').classList.add('active');
+  }
+}
+
+function changeLineChartSlider(val) {
+  year_min = Math.floor(val[0]);
+  year_max = Math.floor(val[1]);
+  season_min = val[0] - year_min; 
+  season_max = val[1] - year_max;
+  if (year_max == year_min && season_min == season_max) {
+    season = seasonBasedOnThreshold[season_min];
+    // Update active button styles
+    document.querySelectorAll('.season_button').forEach(function (btn) {
+      btn.classList.remove('active');
+    });
+
+    if (season != null) {
+      document.getElementById(season.toLowerCase() + '_button').classList.add('active');
+    }
+  }
+  else {
+    season = null;
   }
 
   updateData();
@@ -1121,16 +1205,35 @@ function updateData() {
 
   selectedData = globalData;
   selectionActive = false;
-
-  if (year_min != null) {
+  if (year_min != null && year_max != null) {
     selectedData = selectedData.filter(function (elem) {
-      return year_min <= elem.year && year_max >= elem.year;
+        if (elem.year > year_min && elem.year < year_max) {
+          return true;
+        } else if (elem.year === year_min && elem.year === year_max) {
+          return season_min <= seasonThresholds[elem.season] && season_max >= seasonThresholds[elem.season];
+        } else if (elem.year === year_min) {
+          return season_min <= seasonThresholds[elem.season];
+        } else if (elem.year === year_max) {
+          return season_max >= seasonThresholds[elem.season];
+        }
+        return false;
     });
+
     individualSelectedData = individualSelectedData.filter(function (elem) {
-      return year_min <= elem.year && year_max >= elem.year;
+      if (elem.year > year_min && elem.year < year_max) {
+        return true;
+      } else if (elem.year === year_min && elem.year === year_max) {
+        return season_min <= seasonThresholds[elem.season] && season_max >= seasonThresholds[elem.season];
+      } else if (elem.year === year_min) {
+        return season_min <= seasonThresholds[elem.season];
+      } else if (elem.year === year_max) {
+        return season_max >= seasonThresholds[elem.season];
+      }
+      return false;
     });
+
     selectionActive = true;
-  }
+}
 
   if (score_min != null) {
     selectedData = selectedData.filter(function (elem) {
@@ -1214,8 +1317,17 @@ function updateData() {
     changed_year = true;
   else
     changed_year = false;
+    console.log(changed_year);
   prev_year_min = year_min;
   prev_year_max = year_max;
+
+  if ((prev_season_min != season_min) || (prev_season_max != season_max)) 
+    changed_season_range = true;
+  else
+    changed_season_range = false;
+  console.log(changed_season_range);
+  prev_season_min = season_min;
+  prev_season_max = season_max;
 
   if ((prev_score_min != score_min) || (prev_score_max != score_max)) 
     changed_bin = true;
@@ -1437,7 +1549,7 @@ function updateScatterPlot(data) {
     .domain(["Spring", "Summer", "Fall", "Winter"])
     .range(["LimeGreen", "Gold", "DarkOrange", "Purple"]);
 
-  if (changed_bin || changed_pop || changed_season || changed_genre || changed_source || changed_year) {
+  if (changed_bin || changed_pop || changed_season || changed_genre || changed_source || changed_year || changed_season_range) {
     xScale = d3
       .scaleLinear()
       .domain((pop_min != null) ? [pop_min, pop_max] : [2.5, 7])
@@ -1473,8 +1585,8 @@ function updateScatterPlot(data) {
       .filter((d) => season == null || season == d.season)
       .filter((d) => genre == null || d.genres.includes(genre))
       .filter((d) => source == null || d.source_type == source)
-      .filter((d) => year_max == null || d.year >= year_max)
-      .filter((d) => year_min == null || d.year <= year_min)
+      .filter((d) => year_min == null || season_min == null || d.year > year_min || (d.year == year_min && seasonThresholds[d.season] >= season_min))
+      .filter((d) => year_max == null || season_max == null || d.year < year_max || (d.year == year_max && seasonThresholds[d.season] <= season_max))
       .style("opacity", 1);
   
     // Update regression line
