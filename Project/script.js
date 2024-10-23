@@ -871,7 +871,7 @@ function createLinechart() {
   const svgWidth = d3.select("#ScentedPlot").node().clientWidth;
   const svgHeight = d3.select("#ScentedPlot").node().clientHeight;
 
-  const margin = { top: 20, bottom: 40, left: 60, right: 60 };
+  const margin = { top: 20, bottom: 30, left: 50, right: 50 };
 
   const svg = d3
     .select("#ScentedPlot")
@@ -1018,8 +1018,17 @@ function createLinechart() {
     .remove();
   sliderGroup.selectAll(".track-fill")
     .remove();
+  sliderGroup.selectAll(".track-overlay")
+    .attr("cursor", "default");
+  sliderGroup.selectAll(".slider")
+    .attr("cursor", "default");
   sliderGroup.selectAll(".handle")
-    .attr("d", "M-2.75,-2.75v5l3,2.75l3,-2.75v-5z");
+    .attr("d", "M-4.125,-4.125v7.5l4.5,4.125l4.5,-4.125v-7.5z"/*function (d) {
+      if (this.getAttribute("aria-valuenow") == d3.min(sliderDomain))
+        return "M-4.125,-4.125v7.5l4.5,4.125v-11.625z";
+      else
+        return "M0.375,-4.125v11.625l4.5,-4.12v-7.5z";
+    }*/);
 
 }
 
@@ -1336,17 +1345,18 @@ function changeLineChartSlider(val) {
   season_max = val[1] - year_max;
   if (year_max == year_min && season_min == season_max) {
     season = seasonBasedOnThreshold[season_min];
-    // Update active button styles
-    document.querySelectorAll('.season_button').forEach(function (btn) {
-      btn.classList.remove('active');
-    });
-
-    if (season != null) {
-      document.getElementById(season.toLowerCase() + '_button').classList.add('active');
-    }
   }
   else {
     season = null;
+  }
+
+  // Update active button styles
+  document.querySelectorAll('.season_button').forEach(function (btn) {
+    btn.classList.remove('active');
+  });
+
+  if (season != null) {
+    document.getElementById(season.toLowerCase() + '_button').classList.add('active');
   }
 
   updateData();
