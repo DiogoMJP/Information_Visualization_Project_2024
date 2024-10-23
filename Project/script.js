@@ -416,9 +416,9 @@ function createSourceFilter() {
 // Create visual idioms
 
 // Create the line showing a jump in values on the graph
-function drawSkip(is_horiz, start_x, start_y) {
-  const data = (sx, sy) => {return [{x: sx + 0, y: sy + 0}, {x: sx + 13, y: sy + 0}, {x: sx + 15, y: sy + 5}, {x: sx + 19, y: sy - 5}, {x: sx + 23, y: sy + 5},
-    {x: sx + 27, y: sy - 5}, {x: sx + 31, y: sy + 5}, {x: sx + 35, y: sy - 5}, {x: sx + 37, y: sy + 0}, {x: sx + 50, y: sy + 0}]};
+function drawSkip(is_horiz, start_x, start_y, len) {
+  const data = (sx, sy) => {return [{x: sx + 0, y: sy + 0}, {x: sx + 0.2*len, y: sy + 0}, {x: sx + 0.25*len, y: sy + 0.1*len}, {x: sx + 0.35*len, y: sy - 0.1*len}, {x: sx + 0.45*len, y: sy + 0.1*len},
+    {x: sx + 0.55*len, y: sy - 0.1*len}, {x: sx + 0.65*len, y: sy + 0.1*len}, {x: sx + 0.75*len, y: sy - 0.1*len}, {x: sx + 0.8*len, y: sy + 0}, {x: sx + len, y: sy + 0}]};
   var horizLineFunc = d3.line()
     .x(function(d) { return d.x })
     .y(function(d) { return d.y });
@@ -512,12 +512,12 @@ function createScatterPlot(data) {
     .attr("transform", `translate(${margin},0)`)
     .call(d3.axisLeft(yScale).tickSizeOuter(0));
   svg.append('path')
-    .attr('d', drawSkip(true, margin, svgHeight - margin))
+    .attr('d', drawSkip(true, margin, svgHeight - margin, 50))
     .attr('stroke', 'black')
     .attr('width', 1)
     .attr('fill', 'none');
   svg.append('path')
-    .attr('d', drawSkip(false, margin, svgHeight - margin - 50))
+    .attr('d', drawSkip(false, margin, svgHeight - margin - 50, 50))
     .attr('stroke', 'black')
     .attr('width', 1)
     .attr('fill', 'none');
@@ -628,7 +628,7 @@ function createHistogram(data) {
             .tickValues(d3.range(3, 9.5, 0.5))
     );
     svg.append('path')
-    .attr('d', drawSkip(true, margin, svgHeight - margin))
+    .attr('d', drawSkip(true, margin, svgHeight - margin, 50))
     .attr('stroke', 'black')
     .attr('width', 1)
     .attr('fill', 'none');
@@ -891,9 +891,14 @@ function createLinechart() {
     .scaleLinear()
     .domain([d3.min(sortedData, d => d.meanScore), d3.max(sortedData, d => d.meanScore)])
     .nice()
-    .range([svgHeight - margin.bottom, margin.top]);
+    .range([svgHeight - margin.bottom - 25, margin.top]);
 
   // Line generator function
+  svg.append('path')
+    .attr('d', drawSkip(false, margin.left, svgHeight - margin.bottom - 25, 25))
+    .attr('stroke', 'black')
+    .attr('width', 1)
+    .attr('fill', 'none');
   const line = d3
     .line()
     .x(d => xScale(`${d.year}-${d.season}`) + xScale.bandwidth() / 2)
