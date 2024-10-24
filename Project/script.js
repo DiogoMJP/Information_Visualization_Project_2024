@@ -919,10 +919,10 @@ function createLinechart() {
 
   svg
     .append("rect")
-    .attr("x", firstTickPosition)
-    .attr("y", margin.top)
-    .attr("width", lastTickPosition - firstTickPosition)
-    .attr("height", svgHeight - margin.top - margin.bottom)
+    .attr("x", firstTickPosition - 4.5)
+    .attr("y", 15)
+    .attr("width", lastTickPosition - firstTickPosition + 9)
+    .attr("height", svgHeight - margin.top - margin.bottom + 5)
     .style("fill", "lightblue")
     .style("opacity", 0.8)
     .attr("z-index", 5);
@@ -1341,8 +1341,8 @@ function clickLineChartCircle(event, d) {
       .select("rect")
       .transition()
       .duration(200)
-      .attr("x", scented_widget_x_scale(`${d.year}-${d.season}`) + scented_widget_x_scale.bandwidth() / 2)
-      .attr("width", 0);
+      .attr("x", scented_widget_x_scale(`${d.year}-${d.season}`) - 4.5 + scented_widget_x_scale.bandwidth() / 2)
+      .attr("width", 9);
   }
   else {
     year_max = null;
@@ -1356,8 +1356,8 @@ function clickLineChartCircle(event, d) {
       .select("rect")
       .transition()
       .duration(200)
-      .attr("x", scented_widget_x_scale(`2000-Winter`) + scented_widget_x_scale.bandwidth() / 2)
-      .attr("width", scented_widget_x_scale(`2009-Fall`) - scented_widget_x_scale(`2000-Winter`));
+      .attr("x", scented_widget_x_scale(`2000-Winter`) - 4.5 + scented_widget_x_scale.bandwidth() / 2)
+      .attr("width", scented_widget_x_scale(`2009-Fall`) + 9 - scented_widget_x_scale(`2000-Winter`));
   }
 
   // Update active button styles
@@ -1385,10 +1385,8 @@ function changeLineChartSlider(val) {
   d3.select("#ScentedPlot")
     .select("svg")
     .select("rect")
-    .transition()
-    .duration(200)
-    .attr("x", scented_widget_x_scale(`${year_min}-${seasonBasedOnThreshold[season_min]}`) + scented_widget_x_scale.bandwidth() / 2)
-    .attr("width", scented_widget_x_scale(`${year_max}-${seasonBasedOnThreshold[season_max]}`) - scented_widget_x_scale(`${year_min}-${seasonBasedOnThreshold[season_min]}`));
+    .attr("x", scented_widget_x_scale(`${year_min}-${seasonBasedOnThreshold[season_min]}`) - 4.5 + scented_widget_x_scale.bandwidth() / 2)
+    .attr("width", scented_widget_x_scale(`${year_max}-${seasonBasedOnThreshold[season_max]}`) + 9 - scented_widget_x_scale(`${year_min}-${seasonBasedOnThreshold[season_min]}`));
 
   // Update active button styles
   document.querySelectorAll('.season_button').forEach(function (btn) {
