@@ -49,6 +49,7 @@ var brushed_anime_id = null;
 var selectionActive = false;
 var individualSelectionActive = false;
 var updateDueToIndividualSelection = false;
+var scented_widget_x_scale = null;
 
 var zoom_x_scale = null;
 var zoom_y_scale = null;
@@ -890,6 +891,8 @@ function createLinechart() {
     .domain(sortedData.map(d => `${d.year}-${d.season}`)) // Keep the sorted data order
     .range([margin.left, svgWidth - margin.right])
     .padding(0.2);
+  
+  scented_widget_x_scale = xScale;
 
   // Y Scale for the mean points
   const yScale = d3
@@ -908,6 +911,21 @@ function createLinechart() {
     .line()
     .x(d => xScale(`${d.year}-${d.season}`) + xScale.bandwidth() / 2)
     .y(d => yScale(d.meanScore));
+
+  const firstTick = sortedData[0]; // First year-season in the sorted data
+  const lastTick = sortedData[sortedData.length - 1]; 
+  const firstTickPosition = xScale(`${firstTick.year}-${firstTick.season}`) + xScale.bandwidth() / 2;
+  const lastTickPosition = xScale(`${lastTick.year}-${lastTick.season}`) + xScale.bandwidth() / 2;
+
+  svg
+    .append("rect")
+    .attr("x", firstTickPosition)
+    .attr("y", margin.top)
+    .attr("width", lastTickPosition - firstTickPosition)
+    .attr("height", svgHeight - margin.top - margin.bottom)
+    .style("fill", "lightblue")
+    .style("opacity", 0.8)
+    .attr("z-index", 5);
 
   // Draw line path
   svg
@@ -989,11 +1007,6 @@ function createLinechart() {
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
     .text("Mean Score");
-
-  const firstTick = sortedData[0]; // First year-season in the sorted data
-  const lastTick = sortedData[sortedData.length - 1]; 
-  const firstTickPosition = xScale(`${firstTick.year}-${firstTick.season}`) + xScale.bandwidth() / 2;
-  const lastTickPosition = xScale(`${lastTick.year}-${lastTick.season}`) + xScale.bandwidth() / 2;
 
   // Define the step as 0.25 to represent each season (Winter=0, Spring=0.25, Summer=0.5, Fall=0.75)
   const sliderDomain = sortedData.map(d => d.year + seasonOrder.indexOf(d.season) * 0.25);
@@ -1323,6 +1336,13 @@ function clickLineChartCircle(event, d) {
     season_max = seasonThresholds[d.season];
     season_min = seasonThresholds[d.season];
     lineChartSlider.value([d.year + seasonThresholds[d.season], d.year + seasonThresholds[d.season]]);
+    d3.select("#ScentedPlot")
+      .select("svg")
+      .select("rect")
+      .transition()
+      .duration(200)
+      .attr("x", scented_widget_x_scale(`${d.year}-${d.season}`) + scented_widget_x_scale.bandwidth() / 2)
+      .attr("width", 0);
   }
   else {
     year_max = null;
@@ -1331,6 +1351,13 @@ function clickLineChartCircle(event, d) {
     season_max = null;
     season_min = null;
     lineChartSlider.value(lineChartSlider.default());
+    d3.select("#ScentedPlot")
+      .select("svg")
+      .select("rect")
+      .transition()
+      .duration(200)
+      .attr("x", scented_widget_x_scale(`2000-Winter`) + scented_widget_x_scale.bandwidth() / 2)
+      .attr("width", scented_widget_x_scale(`2009-Fall`) - scented_widget_x_scale(`2000-Winter`));
   }
 
   // Update active button styles
@@ -1354,6 +1381,14 @@ function changeLineChartSlider(val) {
   else {
     season = null;
   }
+
+  d3.select("#ScentedPlot")
+    .select("svg")
+    .select("rect")
+    .transition()
+    .duration(200)
+    .attr("x", scented_widget_x_scale(`${year_min}-${seasonBasedOnThreshold[season_min]}`) + scented_widget_x_scale.bandwidth() / 2)
+    .attr("width", scented_widget_x_scale(`${year_max}-${seasonBasedOnThreshold[season_max]}`) - scented_widget_x_scale(`${year_min}-${seasonBasedOnThreshold[season_min]}`));
 
   // Update active button styles
   document.querySelectorAll('.season_button').forEach(function (btn) {
@@ -1508,7 +1543,6 @@ function updateData() {
     changed_year = true;
   else
     changed_year = false;
-    console.log(changed_year);
   prev_year_min = year_min;
   prev_year_max = year_max;
 
@@ -1516,7 +1550,6 @@ function updateData() {
     changed_season_range = true;
   else
     changed_season_range = false;
-  console.log(changed_season_range);
   prev_season_min = season_min;
   prev_season_max = season_max;
 
