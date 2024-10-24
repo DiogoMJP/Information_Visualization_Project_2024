@@ -527,6 +527,7 @@ function createScatterPlot(data) {
     .attr("y", svgHeight - 25)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
+    .style("user-select", "none")
     .text("Popularity");
   svg
     .append("text")
@@ -534,7 +535,11 @@ function createScatterPlot(data) {
     .attr("y", margin - 10)
     .attr("font-size", 10)
     .attr("text-anchor", "middle")
+    .style("user-select", "none")
     .text("Score");
+  
+  svg.selectAll('.tick')
+    .style("user-select", "none");
 
   // Add regression line
   const { slope, intercept } = calculateRegressionLine(data);
@@ -1774,6 +1779,9 @@ function updateScatterPlot(data) {
       .filter((d) => year_min == null || season_min == null || d.year > year_min || (d.year == year_min && seasonThresholds[d.season] >= season_min))
       .filter((d) => year_max == null || season_max == null || d.year < year_max || (d.year == year_max && seasonThresholds[d.season] <= season_max))
       .style("opacity", 1);
+    
+    svg.selectAll('.tick')
+      .style("user-select", "none");
   
     // Update regression line
     const { slope, intercept } = calculateRegressionLine(selectedData);
