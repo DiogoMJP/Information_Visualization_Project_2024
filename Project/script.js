@@ -172,7 +172,7 @@ function createScoreSlider(id, v_min, v_max, updateFunc) {
       .attr("class", "ticks")
       .attr("transform", "translate(0,20)")
       .selectAll("text")
-      .data(x.ticks(14))
+      .data(x.ticks(7))
       .enter().append("text")
       .attr("x", x)
       .attr("text-anchor", "middle")
@@ -260,7 +260,7 @@ function createPopularitySlider(id, v_min, v_max, updateFunc) {
   var sliderVals=[v_min, v_max],
       svg = d3.select("#" + id).append("svg")
         .attr('width', width)
-        .attr('height', 30);
+        .attr('height', 32);
   
   var x = d3.scaleLinear()
       .domain([v_min, v_max])
@@ -288,7 +288,7 @@ function createPopularitySlider(id, v_min, v_max, updateFunc) {
       .attr("class", "ticks")
       .attr("transform", "translate(0,20)")
       .selectAll("text")
-      .data(x.ticks(14))
+      .data(x.ticks(10))
       .enter().append("text")
       .attr("x", x)
       .attr("text-anchor", "middle")
