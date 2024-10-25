@@ -133,10 +133,21 @@ function createAnimeList() {
     .filter((d) => individualAnimeListSelectedData.includes(d))
     .attr("class", "anime_list_element clicked");
   
-  document.getElementById("anime_list_scale_left")
-    .textContent = "\u00A0\u00A0" + d3.min(selectedData, d => d.num_episodes);
-  document.getElementById("anime_list_scale_right")
-    .textContent = d3.max(selectedData, d => d.num_episodes) + "\u00A0\u00A0";
+  if (selectedData.length > 0) {
+    document.getElementById("anime_list_scale_left")
+      .textContent = "\u00A0\u00A0" + d3.min(selectedData, d => d.num_episodes);
+    document.getElementById("anime_list_scale_right")
+      .textContent = d3.max(selectedData, d => d.num_episodes) + "\u00A0\u00A0";
+    document.getElementById("anime_list_scale_label")
+      .textContent = "Number of Episodes";
+  } else {
+    document.getElementById("anime_list_scale_left")
+      .textContent = "";
+    document.getElementById("anime_list_scale_right")
+      .textContent = "";
+    document.getElementById("anime_list_scale_label")
+      .textContent = "No Series Available";
+  }
 }
 
 function createScoreSlider(id, v_min, v_max, updateFunc) {
@@ -1826,7 +1837,7 @@ function updateScatterPlot(data) {
       .attr("stroke", "steelblue");
 
     // Update slope label
-    document.getElementById("slope_value").textContent = "Slope: " + slope.toFixed(4);
+    document.getElementById("slope_value").textContent = "Slope: " + (selectedData.length >= 2 ? slope.toFixed(4) : "Unavailable");
   } else {
     x_scale = zoom_x_scale;
     y_scale = zoom_y_scale;
