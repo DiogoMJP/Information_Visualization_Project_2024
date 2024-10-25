@@ -894,7 +894,6 @@ function createLinechart() {
   
   scented_widget_x_scale = xScale;
 
-  // Y Scale for the mean points
   const yScale = d3
     .scaleLinear()
     .domain([d3.min(sortedData, d => d.meanScore), d3.max(sortedData, d => d.meanScore)])
@@ -998,7 +997,7 @@ function createLinechart() {
   svg
     .append("g")
     .attr("transform", `translate(${margin.left}, 0)`)
-    .call(d3.axisLeft(yScale));
+    .call(d3.axisLeft(yScale).tickSizeOuter(0).tickValues(d3.range(d3.min(sortedData, d => d.meanScore), d3.max(sortedData, d => d.meanScore), 0.2)));
 
   svg
     .append("text")
