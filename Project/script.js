@@ -139,14 +139,14 @@ function createAnimeList() {
     document.getElementById("anime_list_scale_right")
       .textContent = d3.max(selectedData, d => d.num_episodes) + "\u00A0\u00A0";
     document.getElementById("anime_list_scale_label")
-      .textContent = "Number of Episodes";
+      .innerHTML = "<b>Number of Episodes</b>";
   } else {
     document.getElementById("anime_list_scale_left")
       .textContent = "";
     document.getElementById("anime_list_scale_right")
       .textContent = "";
     document.getElementById("anime_list_scale_label")
-      .textContent = "No Series Available";
+      .innerHTML = "<b>No Series Available</b>";
   }
 }
 
