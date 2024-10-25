@@ -489,10 +489,10 @@ function createScatterPlot(data) {
     .append("clipPath")
     .attr("id", "scatterPlotClip")
     .append("rect")
-    .attr("x", margin)
-    .attr("y", margin)
-    .attr("width", svgWidth - margin * 2 + 10)
-    .attr("height", svgHeight - margin * 2 - 40);
+    .attr("x", margin + 40)
+    .attr("y", margin - 10)
+    .attr("width", svgWidth - margin * 2 - 40)
+    .attr("height", svgHeight - margin * 2 - 25);
   const chartArea = svg.append("g")
     .attr("clip-path", "url(#scatterPlotClip)");
 
@@ -1809,8 +1809,8 @@ function updateScatterPlot(data) {
     svg.transition().duration(500).call(zoomBehavior.transform, d3.zoomIdentity);
 
     svg
-    .selectAll("circle")
-    .style("opacity", 0);
+      .selectAll("circle")
+      .style("opacity", 0);
 
     svg
       .selectAll("circle")
