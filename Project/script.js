@@ -146,7 +146,7 @@ function createAnimeList() {
     document.getElementById("anime_list_scale_right")
       .textContent = "";
     document.getElementById("anime_list_scale_label")
-      .innerHTML = "<b>No Series Available</b>";
+      .innerHTML = "<b>No Anime Available</b>";
   }
 }
 
@@ -1345,6 +1345,9 @@ function clickLineChartCircle(event, d) {
     season = d.season;
     season_max = seasonThresholds[d.season];
     season_min = seasonThresholds[d.season];
+    // ensure that data is update even if the slider isn't changed
+    if (year_max == prev_year_max && year_min == prev_year_min)
+      updateData();
     lineChartSlider.value([d.year + seasonThresholds[d.season], d.year + seasonThresholds[d.season]]);
     d3.select("#ScentedPlot")
       .select("svg")
