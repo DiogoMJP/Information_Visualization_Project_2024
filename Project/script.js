@@ -1347,6 +1347,8 @@ function clickLineChartCircle(event, d) {
     season_max = seasonThresholds[d.season];
     season_min = seasonThresholds[d.season];
     // ensure that data is update even if the slider isn't changed
+    if (year_max == prev_year_max && year_min == prev_year_min && season_max == prev_season_max && season_min == prev_season_min)
+      updateData();
     lineChartSlider.value([d.year + seasonThresholds[d.season], d.year + seasonThresholds[d.season]]);
     d3.select("#ScentedPlot")
       .select("svg")
