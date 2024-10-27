@@ -972,7 +972,7 @@ function createLinechart() {
   const xAxisGroup = svg
     .append("g")
     .attr("transform", `translate(0, ${svgHeight - margin.bottom})`)
-    .call(xAxis);
+    .call(xAxis.tickSizeOuter(0));
 
   // Style X-axis ticks: Year on Winter, colored ticks for seasons
   xAxisGroup
