@@ -1392,7 +1392,7 @@ function changeLineChartSlider(val) {
   if (year_max == year_min && season_min == season_max) {
     season = seasonBasedOnThreshold[season_min];
   }
-  else {
+  else if (prev_year_max != null && prev_year_max == prev_year_min && prev_season_max == prev_season_min) {
     season = null;
   }
 
