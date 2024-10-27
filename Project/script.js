@@ -1117,6 +1117,7 @@ function mouseOverAnime(event, d) {
       `<strong>Title:</strong> ${d.title}<br>
         <strong>Score:</strong> ${d.score}<br>
         <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Year:</strong> ${d.year}<br>
         <strong>Season:</strong> ${d.season}<br>
         <strong>Number of Episodes:</strong> ${d.num_episodes}<br>
         <strong>Source Type:</strong> ${d.source_type}<br>
@@ -1599,6 +1600,7 @@ function mouseOverScatterPlot(event, d) {
       `<strong>Title:</strong> ${d.title}<br>
         <strong>Score:</strong> ${d.score}<br>
         <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Year:</strong> ${d.year}<br>
         <strong>Season:</strong> ${d.season}`
     )
 
@@ -1638,6 +1640,7 @@ function mouseOverScatterPlot(event, d) {
       `<strong>Title:</strong> ${d.title}<br>
         <strong>Score:</strong> ${d.score}<br>
         <strong>Members:</strong> ${d.members_count}<br>
+        <strong>Year:</strong> ${d.year}<br>
         <strong>Season:</strong> ${d.season}`
     )
 
